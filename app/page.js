@@ -3,7 +3,7 @@ import Image from "next/image";
 export default function Home() {
   return (
 
-    <div className="bg-white">
+    <div className="">
 
       <nav className="navbar navbar-expand-lg bg-body-tertiary">
         <div className="container-fluid">
@@ -37,11 +37,12 @@ export default function Home() {
         </div>
       </nav>
 
-      <div className="container">
+      <div className="container-fluid">
         <div style={{ gridTemplateColumns: '1fr 1fr' }} className="d-grid gap-3">
 
-          <div className="mt-2 p-2 border rounded shadow">
-            Chat
+          <div style={{ height: '92vh' }} className="mt-2 p-2 border rounded shadow">
+            <h3>Chat</h3>
+
             <div className="input-group mb-3">
               <input type="text" className="form-control" placeholder="Chat with me here" aria-label="Recipient's username" aria-describedby="button-addon2" />
               <button className="btn btn-outline-secondary" type="button" id="button-addon2">Submit</button>
@@ -49,7 +50,7 @@ export default function Home() {
           </div>
 
           <div className="mt-2 p-2 border rounded shadow">
-            Motion Notes
+            <h3>Motion Notes</h3>
 
           </div>
 
@@ -57,6 +58,7 @@ export default function Home() {
       </div>
 
     </div>
+
 
   );
 }
