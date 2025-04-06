@@ -39,8 +39,17 @@ export default function Home() {
 
       <div className="container">
         <div style={{ gridTemplateColumns: '1fr 1fr' }} className="d-grid gap-3">
-          <div className="p-2 border border-rounded">Grid item 1</div>
-          <div className="p-2 border border-rounded">Grid item 2</div>
+          <div className="p-2 border rounded">
+            Chat
+            <div className="input-group mb-3">
+              <input type="text" className="form-control" placeholder="Chat with me here" aria-label="Recipient's username" aria-describedby="button-addon2" />
+              <button className="btn btn-outline-secondary" type="button" id="button-addon2">Submit</button>
+            </div>
+          </div>
+          <div className="p-2 border rounded">
+            Motion Notes
+
+          </div>
         </div>
       </div>
 
