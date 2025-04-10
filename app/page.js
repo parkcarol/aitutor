@@ -11,9 +11,9 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStream, setCurrentStream] = useState("");
 
-  // Log chat history changes
+  // Log chat history and context changes
   useEffect(() => {
-    console.log("Chat history updated:", chatHistory);
+    console.log("Current Chat History:", chatHistory);
   }, [chatHistory]);
 
   const handleSubmit = async () => {
@@ -25,19 +25,12 @@ export default function Home() {
       
       // Add user message to history immediately
       const userMsg = { id: Date.now().toString(), role: "user", content: message };
-      console.log("Adding user message to history:", userMsg);
-      setChatHistory(prev => {
-        const newHistory = [...prev, userMsg];
-        console.log("Updated history after user message:", newHistory);
-        return newHistory;
-      });
+      setChatHistory(prev => [...prev, userMsg]);
       
       const requestBody = {
         chatId,
         message: message.trim()
       };
-
-      console.log("Sending request with body:", requestBody);
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -68,8 +61,21 @@ export default function Home() {
             const data = JSON.parse(line.slice(6));
             
             if (data.done) {
-              console.log("Received final response with history:", data.history);
               setChatHistory(data.history);
+              // Save the assistant's response as a note
+              const lastMessage = data.history[data.history.length - 1];
+              if (lastMessage.role === 'assistant') {
+                await fetch("/api/notes", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    chatId,
+                    messageId: lastMessage.id
+                  }),
+                });
+              }
             } else {
               setCurrentStream(prev => prev + data.content);
             }
@@ -86,8 +92,42 @@ export default function Home() {
 
   return (
     <div className="">
+
+      <nav className="navbar navbar-expand-lg bg-body-tertiary">
+        <div className="container-fluid">
+          <a className="navbar-brand" href="#">Navbar</a>
+          <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span className="navbar-toggler-icon"></span>
+          </button>
+          <div className="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul className="navbar-nav">
+              <li className="nav-item">
+                <a className="nav-link active" aria-current="page" href="#">Home</a>
+              </li>
+              <li className="nav-item">
+                <a className="nav-link" href="#">Features</a>
+              </li>
+              <li className="nav-item">
+                <a className="nav-link" href="#">Pricing</a>
+              </li>
+              <li className="nav-item dropdown">
+                <a className="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  Dropdown link
+                </a>
+                <ul className="dropdown-menu">
+                  <li><a className="dropdown-item" href="#">Action</a></li>
+                  <li><a className="dropdown-item" href="#">Another action</a></li>
+                  <li><a className="dropdown-item" href="#">Something else here</a></li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
       <div className="container-fluid">
         <div style={{ gridTemplateColumns: '1fr 1fr' }} className="d-grid gap-3">
+
           <div style={{ height: '92vh' }} className="mt-2 p-2 border rounded shadow">
             <h3>Chat</h3>
             
@@ -125,8 +165,17 @@ export default function Home() {
               </button>
             </div>
           </div>
+
+          <div className="mt-2 p-2 border rounded shadow">
+            <h3>Motion Notes</h3>
+
+          </div>
+
         </div>
       </div>
+
     </div>
+
+
   );
 }
