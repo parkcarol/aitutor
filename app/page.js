@@ -1,6 +1,8 @@
-"use client";
+'use client'
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
+import Dropdown from "react-bootstrap/Dropdown";
 
 export default function Home() {
   const [message, setMessage] = useState("");
