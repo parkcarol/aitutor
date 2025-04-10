@@ -1,5 +1,6 @@
 'use client'
 
+import MotionPage from "./motion/page";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Dropdown from "react-bootstrap/Dropdown";
@@ -10,6 +11,7 @@ export default function Home() {
   const [chatId] = useState("default-chat");
   const [isLoading, setIsLoading] = useState(false);
   const [currentStream, setCurrentStream] = useState("");
+  const [notes, setNotes] = useState([])
 
   // Log chat history and context changes
   useEffect(() => {
@@ -91,8 +93,28 @@ export default function Home() {
     }
   };
 
+  const addNote = (note) => {
+    setNotes((prev) => [...prev, note])
+  }
+
+  const deleteNote = (index) => {
+    setNotes((prev) =>
+      prev.filter((_, i) => i !== index))
+  }
+
+  const getLastUserInput = (index) => {
+    for (let i = index - 1; i >= 0; i--) {
+      if (chatHistory[i].role === 'user') {
+        return chatHistory[i].content;
+      }
+    }
+    return "Unknown";
+  }
+
   return (
-    <div className="">
+    <div>
+
+      {/* Navbar */}
       <nav className="navbar navbar-expand-lg bg-body-tertiary">
         <div className="container-fluid">
 
@@ -121,17 +143,28 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Main content */}
+      {/* Main Content */}
       <div className="container-fluid">
         <div style={{ gridTemplateColumns: '1fr 1fr' }} className="d-grid gap-3">
-          <div style={{ height: '92vh' }} className="mt-2 p-2 border rounded shadow">
-            <h3>Chat</h3>
 
-            {/* Chat messages display */}
+          {/* Left Section */}
+          <div style={{ height: '92vh' }} className="mt-2 p-2 border rounded shadow">
+            <h4 className="pb-2 border-bottom">Chat</h4>
+
             <div style={{ height: '80%', overflowY: 'auto' }} className="mb-3">
-              {chatHistory.map((msg) => (
+              {chatHistory.map((msg, index) => (
                 <div key={msg.id} className={`p-2 mb-2 ${msg.role === 'user' ? 'bg-light' : 'bg-info bg-opacity-10'}`}>
                   <strong>{msg.role}:</strong> {msg.content}
+                  {msg.role === 'assistant' && (
+                    <div className="mt-2">
+                      <button
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => addNote({ question: getLastUserInput(index), answer: msg.content })}
+                      >
+                        Save to Notes
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
               {isLoading && currentStream && (
@@ -160,11 +193,15 @@ export default function Home() {
                 {isLoading ? "Sending..." : "Submit"}
               </button>
             </div>
+
           </div>
 
+          {/* Right Section */}
           <div className="mt-2 p-2 border rounded shadow">
-            <h3>Motion Notes</h3>
+            <h4 className="pb-2 border-bottom">Motion Notes</h4>
+            <MotionPage notes={notes} deleteNote={deleteNote} />
           </div>
+
         </div>
       </div>
     </div>
