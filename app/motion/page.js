@@ -15,7 +15,8 @@ export default function MotionPage({ notes, deleteNote }) {
                     <p className="mb-1"><strong>Q:</strong> {note.question}</p>
                     <p className="mb-2"><strong>A:</strong> {note.answer}</p>
                     <button
-                      className="btn btn-sm btn-outline-danger"
+                      style={{ color: 'white', backgroundColor: '#69C8EC', borderRadius: '10px' }}
+                      className="btn btn-sm"
                       onClick={() => deleteNote(index)}
                     >
                       Delete Note

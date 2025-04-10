@@ -1,7 +1,7 @@
 'use client'
 
 import MotionPage from "./motion/page";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Dropdown from "react-bootstrap/Dropdown";
 
@@ -12,11 +12,16 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStream, setCurrentStream] = useState("");
   const [notes, setNotes] = useState([])
+  const chatEndRef = useRef(null)
 
   // Log chat history and context changes
   useEffect(() => {
     console.log("Current Chat History:", chatHistory);
   }, [chatHistory]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatHistory])
 
   const handleSubmit = async () => {
     if (!message.trim() || isLoading) return;
@@ -130,7 +135,7 @@ export default function Home() {
           </div> */}
 
           <Dropdown>
-            <Dropdown.Toggle variant="" id="dropdown-basic">
+            <Dropdown.Toggle variant="" id="dropdown-basic" className="opacity-50">
               <Image src="/user.png" alt="mdo" width="32" height="32" className="rounded-circle" />
             </Dropdown.Toggle>
             <Dropdown.Menu>
@@ -145,20 +150,21 @@ export default function Home() {
 
       {/* Main Content */}
       <div className="container-fluid">
-        <div style={{ gridTemplateColumns: '1fr 1fr' }} className="d-grid gap-3">
+        <div style={{ gridTemplateColumns: '1fr 1fr' }} className="d-flex flex-row gap-3">
 
           {/* Left Section */}
-          <div style={{ height: '92vh', backgroundColor: '#DADADA' }} className="mt-2 p-2 border rounded shadow">
+          <div style={{ height: '92vh', backgroundColor: '#DADADA', borderRadius: '10px' }} className="d-flex flex-column justify-content-between w-50 mt-2 p-2 border shadow">
             <h4 className="pb-2 border-bottom">Chat</h4>
 
-            <div style={{ height: '80%', overflowY: 'auto' }} className="mb-3">
+            <div style={{ height: '80vh' }} className="overflow-auto mb-3">
               {chatHistory.map((msg, index) => (
                 <div key={msg.id} className={`p-2 mb-2 ${msg.role === 'user' ? 'bg-light' : 'bg-info bg-opacity-10'}`}>
                   <strong>{msg.role}:</strong> {msg.content}
                   {msg.role === 'assistant' && (
                     <div className="mt-2">
                       <button
-                        className="btn btn-sm btn-outline-primary"
+                        style={{ backgroundColor: '#EEC643', borderRadius: '10px' }}
+                        className="btn btn-sm text-white"
                         onClick={() => addNote({ question: getLastUserInput(index), answer: msg.content })}
                       >
                         Save to Notes
@@ -167,6 +173,7 @@ export default function Home() {
                   )}
                 </div>
               ))}
+              <div ref={chatEndRef} />
               {isLoading && currentStream && (
                 <div className="p-2 mb-2 bg-info bg-opacity-10">
                   <strong>assistant:</strong> {currentStream}
@@ -174,10 +181,11 @@ export default function Home() {
               )}
             </div>
 
-            <div className="input-group mb-3">
+            <div style={{ borderRadius: '10px' }} className="input-group mb-3 p-1 bg-white">
               <input
                 type="text"
-                className="form-control"
+                style={{ border: '0px', borderRadius: '10px' }}
+                className="form-control p-2"
                 placeholder="Chat with me here"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -185,19 +193,20 @@ export default function Home() {
                 disabled={isLoading}
               />
               <button
-                className="btn btn-outline-secondary"
+                style={{ color: 'white', backgroundColor: '#0D21A1', borderRadius: '10px' }}
+                className="btn"
                 type="button"
                 onClick={handleSubmit}
                 disabled={isLoading}
               >
-                {isLoading ? "Sending..." : "Submit"}
+                {isLoading ? "..." : ">"}
               </button>
             </div>
 
           </div>
 
           {/* Right Section */}
-          <div style={{ backgroundColor: '#F2E6C9' }} className="mt-2 p-2 border rounded shadow">
+          <div style={{ backgroundColor: '#F2E6C9', borderRadius: '10px' }} className="d-flex flex-column w-50 mt-2 p-2 border rounded shadow">
             <h4 className="pb-2 border-bottom">Motion Notes</h4>
             <MotionPage notes={notes} deleteNote={deleteNote} />
           </div>
