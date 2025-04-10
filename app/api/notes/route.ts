@@ -1,4 +1,4 @@
-import { notesStore, chatSessions } from "@/lib/store";
+import { notesStore, chatSessions } from "../../../lib/store";
 import { v4 as uuidv4 } from "uuid";
 import { NextResponse } from "next/server";
 
