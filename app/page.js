@@ -148,7 +148,7 @@ export default function Home() {
         <div style={{ gridTemplateColumns: '1fr 1fr' }} className="d-grid gap-3">
 
           {/* Left Section */}
-          <div style={{ height: '92vh' }} className="mt-2 p-2 border rounded shadow">
+          <div style={{ height: '92vh', backgroundColor: '#DADADA' }} className="mt-2 p-2 border rounded shadow">
             <h4 className="pb-2 border-bottom">Chat</h4>
 
             <div style={{ height: '80%', overflowY: 'auto' }} className="mb-3">
@@ -197,13 +197,13 @@ export default function Home() {
           </div>
 
           {/* Right Section */}
-          <div className="mt-2 p-2 border rounded shadow">
+          <div style={{ backgroundColor: '#F2E6C9' }} className="mt-2 p-2 border rounded shadow">
             <h4 className="pb-2 border-bottom">Motion Notes</h4>
             <MotionPage notes={notes} deleteNote={deleteNote} />
           </div>
 
         </div>
       </div>
-    </div>
+    </div >
   );
 }
