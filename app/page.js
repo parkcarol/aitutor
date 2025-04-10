@@ -1,64 +1,76 @@
+'use client'
+
+import Chat from "./tutor/page";
+import MotionPage from "./motion/page";
+import { useState } from 'react'
 import Image from "next/image";
+import Dropdown from "react-bootstrap/Dropdown";
 
 export default function Home() {
+  const [notes, setNotes] = useState([])
+
+  const addNote = (note) => {
+    setNotes((prev) => [...prev, note])
+  }
+
+  const deleteNote = (index) => {
+    setNotes((prev) =>
+      prev.filter((_, i) => i !== index))
+  }
+
   return (
 
-    <div className="">
+    <div>
 
+      {/* Navbar */}
       <nav className="navbar navbar-expand-lg bg-body-tertiary">
         <div className="container-fluid">
-          <a className="navbar-brand" href="#">Navbar</a>
+
+          <a className="navbar-brand" href="#">AITutor</a>
           <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
             <span className="navbar-toggler-icon"></span>
           </button>
-          <div className="collapse navbar-collapse" id="navbarNavDropdown">
-            <ul className="navbar-nav">
-              <li className="nav-item">
-                <a className="nav-link active" aria-current="page" href="#">Home</a>
-              </li>
-              <li className="nav-item">
-                <a className="nav-link" href="#">Features</a>
-              </li>
-              <li className="nav-item">
-                <a className="nav-link" href="#">Pricing</a>
-              </li>
-              <li className="nav-item dropdown">
-                <a className="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  Dropdown link
-                </a>
-                <ul className="dropdown-menu">
-                  <li><a className="dropdown-item" href="#">Action</a></li>
-                  <li><a className="dropdown-item" href="#">Another action</a></li>
-                  <li><a className="dropdown-item" href="#">Something else here</a></li>
-                </ul>
-              </li>
-            </ul>
-          </div>
+
+          {/* To do: user authentication */}
+          {/* <div className="col-md-3 text-end">
+            <button type="button" className="btn btn-outline-primary me-2">Login</button>
+            <button type="button" className="btn btn-primary">Sign-up</button>
+          </div> */}
+
+          <Dropdown>
+            <Dropdown.Toggle variant="" id="dropdown-basic">
+              <Image src="/user.png" alt="mdo" width="32" height="32" className="rounded-circle" />
+            </Dropdown.Toggle>
+            <Dropdown.Menu>
+              <Dropdown.Item href="#/action-1">Profile</Dropdown.Item>
+              <Dropdown.Item href="#/action-2">Settings</Dropdown.Item>
+              <Dropdown.Item href="#/action-3">Sign out</Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown>
+
         </div>
       </nav>
 
+      {/* Main content */}
       <div className="container-fluid">
-        <div style={{ gridTemplateColumns: '1fr 1fr' }} className="d-grid gap-3">
+        <div style={{ gridTemplateColumns: '1fr 1fr' }} className="d-flex flex-row gap-2">
 
-          <div style={{ height: '92vh' }} className="mt-2 p-2 border rounded shadow">
-            <h3>Chat</h3>
-
-            <div className="input-group mb-3">
-              <input type="text" className="form-control" placeholder="Chat with me here" aria-label="Recipient's username" aria-describedby="button-addon2" />
-              <button className="btn btn-outline-secondary" type="button" id="button-addon2">Submit</button>
-            </div>
+          {/* Left Section */}
+          <div style={{ height: '92vh' }} className="d-flex flex-column w-50 mt-2 p-2 border rounded shadow">
+            <h4 className="pb-2 border-bottom">Chat</h4>
+            <Chat onSaveNote={addNote} />
           </div>
 
-          <div className="mt-2 p-2 border rounded shadow">
-            <h3>Motion Notes</h3>
-
+          {/* Right Section */}
+          <div className="d-flex flex-column w-50 mt-2 p-2 border rounded shadow">
+            <h4 className="pb-2 border-bottom">Motion Notes</h4>
+            <MotionPage notes={notes} deleteNote={deleteNote} />
           </div>
 
         </div>
       </div>
 
     </div>
-
 
   );
 }
