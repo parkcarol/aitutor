@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Dropdown from "react-bootstrap/Dropdown";
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { FaEdit, FaCheck, FaTimes, FaGripVertical } from 'react-icons/fa';
+import { FaEdit, FaCheck, FaTimes, FaGripVertical, FaSyncAlt, FaArrowRight } from 'react-icons/fa';
 
 export default function Home() {
   const [message, setMessage] = useState("");
@@ -22,6 +22,8 @@ export default function Home() {
   const [editingNoteContent, setEditingNoteContent] = useState('');
   const [newSectionTitle, setNewSectionTitle] = useState('');
   const [isAddingSectionMode, setIsAddingSectionMode] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
 
   // Log chat history and context changes
   useEffect(() => {
@@ -368,6 +370,48 @@ export default function Home() {
     return () => document.head.removeChild(style);
   }, []);
 
+  // Add function to handle jumping to chat context
+  const jumpToChatContext = (contextRange) => {
+    if (!contextRange) return;
+    
+    // Find the message in chat history and scroll to it
+    const messageElement = document.getElementById(`msg-${contextRange.firstMessageId}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth' });
+      setHighlightedMessageId(contextRange.firstMessageId);
+      // Remove highlight after 3 seconds
+      setTimeout(() => setHighlightedMessageId(null), 3000);
+    }
+  };
+
+  // Modify handleSummarize to include the note creation
+  const handleSummarize = async () => {
+    if (chatHistory.length === 0 || isSummarizing) return;
+
+    try {
+      setIsSummarizing(true);
+      const response = await fetch("/api/summary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chatId,
+          messages: chatHistory
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to generate summary');
+
+      const data = await response.json();
+      setNotes(prev => [...prev, data.note]);
+    } catch (error) {
+      console.error("Error generating summary:", error);
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
   return (
     <div>
 
@@ -410,24 +454,13 @@ export default function Home() {
 
             <div style={{ height: '80vh' }} className="overflow-auto mb-3">
               {chatHistory.map((msg, index) => (
-                <div key={msg.id} className={`p-2 mb-2 ${msg.role === 'user' ? 'bg-light' : 'bg-info bg-opacity-10'}`}>
+                <div
+                  key={msg.id}
+                  id={`msg-${msg.id}`}
+                  className={`p-2 mb-2 ${msg.role === 'user' ? 'bg-light' : 'bg-info bg-opacity-10'} 
+                    ${msg.id === highlightedMessageId ? 'border border-primary' : ''}`}
+                >
                   <strong>{msg.role}:</strong> {msg.content}
-                  {msg.role === 'assistant' && (
-                    <div className="mt-2">
-                      <button
-                        style={{ backgroundColor: '#EEC643', borderRadius: '10px' }}
-                        className="btn btn-sm text-white"
-                        onClick={() => addNote({
-                          question: getLastUserInput(index),
-                          answer: msg.content,
-                          messageId: msg.id,
-                          type: 'message'
-                        })}
-                      >
-                        Save to Notes
-                      </button>
-                    </div>
-                  )}
                 </div>
               ))}
               <div ref={chatEndRef} />
@@ -438,25 +471,35 @@ export default function Home() {
               )}
             </div>
 
-            <div style={{ borderRadius: '10px' }} className="input-group mb-3 p-1 bg-white">
-              <input
-                type="text"
-                style={{ border: '0px', borderRadius: '10px' }}
-                className="form-control p-2"
-                placeholder="Chat with me here"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyUp={(e) => e.key === 'Enter' && handleSubmit()}
-                disabled={isLoading}
-              />
+            <div className="d-flex gap-2">
+              <div style={{ borderRadius: '10px' }} className="input-group p-1 bg-white flex-grow-1">
+                <input
+                  type="text"
+                  style={{ border: '0px', borderRadius: '10px' }}
+                  className="form-control p-2"
+                  placeholder="Chat with me here"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyUp={(e) => e.key === 'Enter' && handleSubmit()}
+                  disabled={isLoading}
+                />
+                <button
+                  style={{ color: 'white', backgroundColor: '#0D21A1', borderRadius: '10px' }}
+                  className="btn"
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                >
+                  {isLoading ? "..." : ">"}
+                </button>
+              </div>
               <button
-                style={{ color: 'white', backgroundColor: '#0D21A1', borderRadius: '10px' }}
-                className="btn"
-                type="button"
-                onClick={handleSubmit}
-                disabled={isLoading}
+                style={{ color: 'white', backgroundColor: '#EEC643', borderRadius: '10px' }}
+                className="btn d-flex align-items-center gap-2"
+                onClick={handleSummarize}
+                disabled={isSummarizing || chatHistory.length === 0}
               >
-                {isLoading ? "..." : ">"}
+                {isSummarizing ? <FaSyncAlt className="spin" /> : "Summarize & Save"}
               </button>
             </div>
 
@@ -591,9 +634,6 @@ export default function Home() {
                                 <FaGripVertical />
                               </div>
                               <div className="flex-grow-1">
-                                {note.question && (
-                                  <p className="mb-1"><strong>Q:</strong> {note.question}</p>
-                                )}
                                 {editingNoteId === note.id ? (
                                   <div className="d-flex gap-2 align-items-start">
                                     <textarea
@@ -620,10 +660,22 @@ export default function Home() {
                                     </button>
                                   </div>
                                 ) : (
-                                  <p className="mb-0">
-                                    <strong>{note.answer ? 'A: ' : ''}</strong>
-                                    {note.answer || note.content}
-                                  </p>
+                                  <div>
+                                    {note.type === 'summary' && note.contextRange && (
+                                      <div className="mb-2">
+                                        <button
+                                          className="btn btn-sm btn-outline-primary d-flex align-items-center gap-2"
+                                          onClick={() => jumpToChatContext(note.contextRange)}
+                                        >
+                                          <FaArrowRight /> Jump to Chat Context ({note.contextRange.messageCount} messages)
+                                        </button>
+                                      </div>
+                                    )}
+                                    <p className="mb-0">
+                                      <strong>{note.answer ? 'A: ' : ''}</strong>
+                                      {note.answer || note.content}
+                                    </p>
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -664,6 +716,20 @@ export default function Home() {
 
         </div>
       </div>
-    </div >
+
+      <style jsx>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .spin {
+          animation: spin 1s linear infinite;
+        }
+        .border-primary {
+          box-shadow: 0 0 0 2px #0d6efd;
+          transition: box-shadow 0.3s ease-in-out;
+        }
+      `}</style>
+    </div>
   );
 }

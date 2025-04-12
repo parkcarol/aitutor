@@ -28,7 +28,6 @@ export async function POST(request: Request) {
           updatedAt: now
         },
         messages: [],
-        notes: [],
         createdAt: now,
         updatedAt: now
       };
