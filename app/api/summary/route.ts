@@ -27,20 +27,15 @@ export async function POST(request: Request) {
     Chapter: ${chatSession.context.chapter || 'Not specified'}
     Grade Level: ${chatSession.context.gradeLevel || 'Not specified'}
     
-    Please create a structured summary that includes:
-    1. Main Concepts: List the key physics concepts that were discussed
-    2. Learning Progress: Highlight the student's understanding and any breakthroughs
-    3. Key Points: Summarize the most important explanations and examples
-    4. Questions to Review: Note any areas where the student might need more practice
-    
-    Format the summary in a clear, bullet-point style that will be helpful for future review.
-    Keep each section concise but comprehensive.`;
+    You have the full context of the conversation, but the user has just requested a summary so focus on the last 20 messages 
+    Format the summary in a clear, paragraph style that will be helpful for future review, and assume that it will be one part of a larger note the user is creating so be too the point
+    Keep the note concise but comprehensive.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: "Please summarize this learning conversation:" },
+        { role: "user", content: "Please summarize this tutoring conversation:" },
         ...messages.map(msg => ({ role: msg.role, content: msg.content }))
       ],
       temperature: 0.7,

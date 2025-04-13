@@ -374,13 +374,14 @@ export default function Home() {
   const jumpToChatContext = (contextRange) => {
     if (!contextRange) return;
     
-    // Find the message in chat history and scroll to it
-    const messageElement = document.getElementById(`msg-${contextRange.firstMessageId}`);
+    // Use lastMessageId instead of firstMessageId
+    const messageElement = document.getElementById(`msg-${contextRange.lastMessageId}`);
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: 'smooth' });
-      setHighlightedMessageId(contextRange.firstMessageId);
-      // Remove highlight after 3 seconds
-      setTimeout(() => setHighlightedMessageId(null), 3000);
+      setHighlightedMessageId(contextRange.lastMessageId);
+      setTimeout(() => {
+        setHighlightedMessageId(null);
+      }, 2000);
     }
   };
 
@@ -664,10 +665,11 @@ export default function Home() {
                                     {note.type === 'summary' && note.contextRange && (
                                       <div className="mb-2">
                                         <button
-                                          className="btn btn-sm btn-outline-primary d-flex align-items-center gap-2"
+                                          style={{ backgroundColor: '#146FE1', borderColor: '#146FE1', color: 'white' }}
+                                          className="btn btn-sm d-flex align-items-center gap-2"
                                           onClick={() => jumpToChatContext(note.contextRange)}
                                         >
-                                          <FaArrowRight /> Jump to Chat Context ({note.contextRange.messageCount} messages)
+                                          <FaArrowRight /> Jump to Chat 
                                         </button>
                                       </div>
                                     )}
