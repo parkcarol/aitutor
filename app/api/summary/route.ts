@@ -29,7 +29,8 @@ export async function POST(request: Request) {
     
     You have the full context of the conversation, but the user has just requested a summary so focus on the last 20 messages 
     Format the summary in a clear, paragraph style that will be helpful for future review, and assume that it will be one part of a larger note the user is creating so be too the point
-    Keep the note concise but comprehensive.`;
+    Keep the note concise but comprehensive.
+    Use a tone which is appropriate to a textbook`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4",
