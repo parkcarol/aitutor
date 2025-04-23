@@ -214,15 +214,33 @@ export default function Home() {
   const editNote = (noteId) => {
     const note = notes.find(n => n.id === noteId);
     if (note) {
+      // Convert HTML bullet points and breaks to plain text format for editing
+      const content = (note.answer || note.content)
+        .replace(/<br\s*\/?>/g, '\n')  // Convert <br> to newlines
+        .replace(/<li>/g, '• ')        // Convert list items to bullet points
+        .replace(/<\/?[^>]+(>|$)/g, '') // Remove any other HTML tags
+        .trim();
       setEditingNoteId(noteId);
-      setEditingNoteContent(note.answer || note.content);
+      setEditingNoteContent(content);
     }
   };
 
   const saveNoteEdit = (noteId) => {
+    // Convert plain text bullet points and newlines back to HTML
+    const formattedContent = editingNoteContent
+      .split('\n')
+      .map(line => {
+        line = line.trim();
+        if (line.startsWith('•') || line.startsWith('*')) {
+          return `<li>${line.substring(1).trim()}</li>`;
+        }
+        return line;
+      })
+      .join('<br />');
+
     setNotes(prev => prev.map(note => 
       note.id === noteId 
-        ? { ...note, answer: editingNoteContent, content: editingNoteContent }
+        ? { ...note, answer: formattedContent, content: formattedContent }
         : note
     ));
     setEditingNoteId(null);
@@ -419,12 +437,24 @@ export default function Home() {
       .drag-handle:hover {
         color: #333;
       }
+      .section-content .card {
+        background-color: rgba(242, 230, 201, 0.6);
+      }
       button.delete-btn {
         transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
       }
       button.delete-btn:hover {
         background-color:rgb(204, 50, 50) !important;
         border-color: #9e3333 !important;
+      }
+      .note-content li {
+        margin-left: 20px;
+        list-style-type: disc;
+      }
+      .note-content br {
+        display: block;
+        margin: 8px 0;
+        content: "";
       }
     `;
     document.head.appendChild(style);
@@ -729,29 +759,44 @@ export default function Home() {
                               </div>
                               <div className="flex-grow-1">
                                 {editingNoteId === note.id ? (
-                                  <div className="d-flex gap-2 align-items-start">
+                                  <div>
+                                    <div className="d-flex justify-content-between align-items-start mb-2">
+                                      <div className="d-flex gap-2">
+                                        <button
+                                          style={{ backgroundColor: '#146FE1', borderColor: '#146FE1', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', fontWeight: 'bold' }}
+                                          className="btn btn-sm"
+                                          onClick={() => saveNoteEdit(note.id)}
+                                          title="Save note"
+                                        >
+                                          <FaCheck />
+                                        </button>
+                                        <button
+                                          style={{ backgroundColor: '#333333', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                          className="btn btn-sm"
+                                          onClick={() => {
+                                            setEditingNoteId(null);
+                                            setEditingNoteContent('');
+                                          }}
+                                          title="Cancel"
+                                        >
+                                          <FaTimes />
+                                        </button>
+                                      </div>
+                                    </div>
                                     <textarea
-                                      className="form-control"
+                                      className="form-control border-0"
                                       value={editingNoteContent}
                                       onChange={(e) => setEditingNoteContent(e.target.value)}
-                                      rows={3}
+                                      rows={5}
+                                      placeholder="Use '•' or '*' at the start of a line for bullet points"
+                                      style={{ 
+                                        fontFamily: 'monospace',
+                                        whiteSpace: 'pre-wrap',
+                                        backgroundColor: 'transparent',
+                                        resize: 'none'
+                                      }}
                                       autoFocus
                                     />
-                                    <button
-                                      className="btn btn-sm btn-success"
-                                      onClick={() => saveNoteEdit(note.id)}
-                                    >
-                                      <FaCheck />
-                                    </button>
-                                    <button
-                                      className="btn btn-sm btn-danger"
-                                      onClick={() => {
-                                        setEditingNoteId(null);
-                                        setEditingNoteContent('');
-                                      }}
-                                    >
-                                      <FaTimes />
-                                    </button>
                                   </div>
                                 ) : (
                                   <div>
@@ -768,18 +813,7 @@ export default function Home() {
                                       )}
                                       <div className="d-flex gap-2">
                                         <button
-                                          style={{ 
-                                            backgroundColor: '#333333', 
-                                            borderColor: '#333333', 
-                                            color: 'white', 
-                                            width: '24px', 
-                                            height: '24px', 
-                                            padding: '0px', 
-                                            fontSize: '14px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                          }}
+                                          style={{ backgroundColor: '#333333', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                           className="btn btn-sm"
                                           onClick={() => editNote(note.id)}
                                           title="Edit note"
@@ -787,36 +821,25 @@ export default function Home() {
                                           <FaEdit />
                                         </button>
                                         <button
-                                          style={{ 
-                                            backgroundColor: isDeleteHovered ? '#9e3333' : '#333333', 
-                                            borderColor: isDeleteHovered ? '#9e3333' : '#333333', 
-                                            color: 'white', 
-                                            width: '24px', 
-                                            height: '24px', 
-                                            padding: '0px', 
-                                            fontSize: '14px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            transition: 'all 0.2s ease-in-out'
-                                          }}
-                                          className="btn btn-sm"
+                                          style={{ backgroundColor: '#333333', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                          className="btn btn-sm delete-btn"
                                           onClick={() => deleteNote(note.id)}
-                                          onMouseEnter={() => setIsDeleteHovered(true)}
-                                          onMouseLeave={() => setIsDeleteHovered(false)}
                                           title="Delete note"
                                         >
                                           <FaTimes />
                                         </button>
                                       </div>
                                     </div>
-                                    <div className="mb-0">
+                                    <div className="mb-0 note-content">
                                       {note.answer && <strong>A: </strong>}
                                       <div
                                         dangerouslySetInnerHTML={{
                                           __html: parseAndSanitizeHTML(note.answer || note.content)
                                         }}
-                                        style={{ display: 'inline' }}
+                                        style={{ 
+                                          display: 'inline',
+                                          lineHeight: '1.5'
+                                        }}
                                       />
                                     </div>
                                   </div>
