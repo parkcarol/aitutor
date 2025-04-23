@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Dropdown from "react-bootstrap/Dropdown";
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { FaEdit, FaCheck, FaTimes, FaGripVertical } from 'react-icons/fa';
+import { FaEdit, FaCheck, FaTimes, FaGripVertical, FaSyncAlt, FaArrowRight, FaArrowUp } from 'react-icons/fa';
 
 export default function Home() {
   const [message, setMessage] = useState("");
@@ -17,11 +17,13 @@ export default function Home() {
     { id: 'default', title: 'General Notes', order: 0 }
   ]);
   const [editingSectionId, setEditingSectionId] = useState(null);
-  const chatEndRef = useRef(null);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingNoteContent, setEditingNoteContent] = useState('');
   const [newSectionTitle, setNewSectionTitle] = useState('');
   const [isAddingSectionMode, setIsAddingSectionMode] = useState(false);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
+  const [isDeleteHovered, setIsDeleteHovered] = useState(false);
+  const chatEndRef = useRef(null);
 
   // Log chat history and context changes
   useEffect(() => {
@@ -31,6 +33,13 @@ export default function Home() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatHistory])
+
+  // Add this new function to parse and sanitize HTML content
+  const parseAndSanitizeHTML = (content) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content, 'text/html');
+    return doc.body.innerHTML;
+  };
 
   const handleSubmit = async () => {
     if (!message.trim() || isLoading) return;
@@ -76,27 +85,10 @@ export default function Home() {
           if (line.startsWith('data: ')) {
             const data = JSON.parse(line.slice(6));
 
-            // if data is done, then adds to chat history 
-            // and then sends that snippet to the notes 
-            // instead sending the last xx messages to notes every time and then getting a separate call made
-
             if (data.done) {
               setCurrentStream("");
               setChatHistory(data.history);
-              // Save the assistant's response as a note
-              const lastMessage = data.history[data.history.length - 1];
-              if (lastMessage.role === 'assistant') {
-                await fetch("/api/notes", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    chatId,
-                    messageId: lastMessage.id
-                  }),
-                });
-              }
+              // No longer automatically saving notes here
             } else {
               setCurrentStream(prev => prev + data.content);
             }
@@ -108,6 +100,50 @@ export default function Home() {
     } finally {
       setIsLoading(false);
       setMessage("");
+    }
+  };
+
+  const handleSaveNote = async (messages) => {
+    try {
+      // Format messages to match the expected structure
+      const formattedMessages = messages.map(msg => ({
+        id: msg.id || Date.now().toString(),
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp || Date.now()
+      }));
+
+      console.log('Sending to summary API:', {
+        chatId,
+        messages: formattedMessages,
+        originalMessages: messages
+      });
+
+      const response = await fetch("/api/summary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chatId,
+          messages: formattedMessages
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Summary API error response:', errorData);
+        throw new Error(errorData.error || 'Failed to generate summary');
+      }
+      const data = await response.json();
+      console.log('Summary API success response:', data);
+      
+      // Add the summarized note to the notes state
+      if (data.note) {
+        setNotes(prev => [...prev, data.note]);
+      }
+    } catch (error) {
+      console.error("Error saving note:", error);
     }
   };
 
@@ -178,15 +214,33 @@ export default function Home() {
   const editNote = (noteId) => {
     const note = notes.find(n => n.id === noteId);
     if (note) {
+      // Convert HTML bullet points and breaks to plain text format for editing
+      const content = (note.answer || note.content)
+        .replace(/<br\s*\/?>/g, '\n')  // Convert <br> to newlines
+        .replace(/<li>/g, '• ')        // Convert list items to bullet points
+        .replace(/<\/?[^>]+(>|$)/g, '') // Remove any other HTML tags
+        .trim();
       setEditingNoteId(noteId);
-      setEditingNoteContent(note.answer || note.content);
+      setEditingNoteContent(content);
     }
   };
 
   const saveNoteEdit = (noteId) => {
+    // Convert plain text bullet points and newlines back to HTML
+    const formattedContent = editingNoteContent
+      .split('\n')
+      .map(line => {
+        line = line.trim();
+        if (line.startsWith('•') || line.startsWith('*')) {
+          return `<li>${line.substring(1).trim()}</li>`;
+        }
+        return line;
+      })
+      .join('<br />');
+
     setNotes(prev => prev.map(note => 
       note.id === noteId 
-        ? { ...note, answer: editingNoteContent, content: editingNoteContent }
+        ? { ...note, answer: formattedContent, content: formattedContent }
         : note
     ));
     setEditingNoteId(null);
@@ -243,6 +297,26 @@ export default function Home() {
     }
   };
 
+  const jumpToChatContext = (contextRange) => {
+    if (!contextRange) return;
+    
+    // Find the message in chat history
+    const message = chatHistory.find(msg => msg.id === contextRange.lastMessageId);
+    if (!message) return;
+
+    // Scroll to the message
+    const messageElement = document.getElementById(`msg-${message.id}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedMessageId(message.id);
+      
+      // Remove highlight after 2 seconds
+      setTimeout(() => {
+        setHighlightedMessageId(null);
+      }, 2000);
+    }
+  };
+  
   const handleSectionDragStart = (e, sectionId) => {
     if (sectionId === 'default') {
       e.preventDefault();
@@ -363,6 +437,25 @@ export default function Home() {
       .drag-handle:hover {
         color: #333;
       }
+      .section-content .card {
+        background-color: rgba(242, 230, 201, 0.6);
+      }
+      button.delete-btn {
+        transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+      }
+      button.delete-btn:hover {
+        background-color:rgb(204, 50, 50) !important;
+        border-color: #9e3333 !important;
+      }
+      .note-content li {
+        margin-left: 20px;
+        list-style-type: disc;
+      }
+      .note-content br {
+        display: block;
+        margin: 8px 0;
+        content: "";
+      }
     `;
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
@@ -408,58 +501,132 @@ export default function Home() {
           <div style={{ height: '92vh', backgroundColor: '#DADADA', borderRadius: '10px' }} className="d-flex flex-column justify-content-between w-50 mt-2 p-2 border shadow">
             <h4 className="pb-2 border-bottom">Chat</h4>
 
-            <div style={{ height: '80vh' }} className="overflow-auto mb-3">
-              {chatHistory.map((msg, index) => (
-                <div key={msg.id} className={`p-2 mb-2 ${msg.role === 'user' ? 'bg-light' : 'bg-info bg-opacity-10'}`}>
-                  <strong>{msg.role}:</strong> {msg.content}
-                  {msg.role === 'assistant' && (
-                    <div className="mt-2">
-                      <button
-                        style={{ backgroundColor: '#EEC643', borderRadius: '10px' }}
-                        className="btn btn-sm text-white"
-                        onClick={() => addNote({
-                          question: getLastUserInput(index),
-                          answer: msg.content,
-                          messageId: msg.id,
-                          type: 'message'
-                        })}
-                      >
-                        Save to Notes
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-              <div ref={chatEndRef} />
-              {isLoading && currentStream && (
-                <div className="p-2 mb-2 bg-info bg-opacity-10">
-                  <strong>assistant:</strong> {currentStream}
-                </div>
-              )}
-            </div>
+            <div className="d-flex flex-column justify-content-between" style={{ height: '100%' }}>
+              <div style={{ height: '75vh' }} className="overflow-auto mb-3">
+                {chatHistory.map((msg, index) => (
+                  <div 
+                    key={msg.id} 
+                    id={`msg-${msg.id}`}
+                    className={`p-2 mb-2 ${msg.role === 'user' ? 'bg-light' : 'bg-info bg-opacity-10'} ${highlightedMessageId === msg.id ? 'border border-primary border-2' : ''}`}
+                    style={{
+                      transition: 'border-color 0.3s ease-in-out',
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <strong>{msg.role}:</strong>{' '}
+                    <div 
+                      dangerouslySetInnerHTML={{ 
+                        __html: parseAndSanitizeHTML(msg.content) 
+                      }} 
+                      style={{ display: 'inline' }}
+                    />
+                    {msg.role === 'assistant' && (
+                      <div className="mt-2">
+                        <button
+                          style={{ backgroundColor: '#EEC643', borderRadius: '10px' }}
+                          className="btn btn-sm text-white"
+                          onClick={() => {
+                            const contextMessages = chatHistory.slice(Math.max(0, index - 1), index + 1)
+                              .map(msg => ({
+                                id: msg.id,
+                                role: msg.role,
+                                content: msg.content,
+                                timestamp: Date.now()
+                              }));
+                            handleSaveNote(contextMessages);
+                          }}
+                        >
+                          Save to Notes
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <div ref={chatEndRef} />
+                {isLoading && currentStream && (
+                  <div className="p-2 mb-2 bg-info bg-opacity-10">
+                    <strong>assistant:</strong>{' '}
+                    <div 
+                      dangerouslySetInnerHTML={{ 
+                        __html: parseAndSanitizeHTML(currentStream) 
+                      }} 
+                      style={{ display: 'inline' }}
+                    />
+                  </div>
+                )}
+              </div>
 
-            <div style={{ borderRadius: '10px' }} className="input-group mb-3 p-1 bg-white">
-              <input
-                type="text"
-                style={{ border: '0px', borderRadius: '10px' }}
-                className="form-control p-2"
-                placeholder="Chat with me here"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyUp={(e) => e.key === 'Enter' && handleSubmit()}
-                disabled={isLoading}
-              />
-              <button
-                style={{ color: 'white', backgroundColor: '#0D21A1', borderRadius: '10px' }}
-                className="btn"
-                type="button"
-                onClick={handleSubmit}
-                disabled={isLoading}
-              >
-                {isLoading ? "..." : ">"}
-              </button>
-            </div>
+              <div>
+                {/* Pre-prompting buttons */}
+                <div className="d-flex flex-row gap-2 mb-3">
+                  <button
+                    style={{ 
+                      backgroundColor: 'black', 
+                      color: 'white', 
+                      borderRadius: '10px',
+                      padding: '4px 12px',
+                      height: '32px',
+                      flex: '1'
+                    }}
+                    className="btn"
+                    onClick={() => setMessage("What is force?")}
+                  >
+                    What is force?
+                  </button>
+                  <button
+                    style={{ 
+                      backgroundColor: 'black', 
+                      color: 'white', 
+                      borderRadius: '10px',
+                      padding: '4px 12px',
+                      height: '32px',
+                      flex: '1'
+                    }}
+                    className="btn"
+                    onClick={() => setMessage("What is thermodynamics?")}
+                  >
+                    What is thermodynamics?
+                  </button>
+                  <button
+                    style={{ 
+                      backgroundColor: 'black', 
+                      color: 'white', 
+                      borderRadius: '10px',
+                      padding: '4px 12px',
+                      height: '32px',
+                      flex: '1'
+                    }}
+                    className="btn"
+                    onClick={() => setMessage("How is motion defined?")}
+                  >
+                    How is motion defined?
+                  </button>
+                </div>
 
+                {/* Chat input */}
+                <div style={{ borderRadius: '10px' }} className="input-group mb-3 p-1 bg-white">
+                  <input
+                    type="text"
+                    style={{ border: '0px', borderRadius: '10px' }}
+                    className="form-control p-2"
+                    placeholder="Chat with me here"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyUp={(e) => e.key === 'Enter' && handleSubmit()}
+                    disabled={isLoading}
+                  />
+                  <button
+                    style={{ color: 'white', backgroundColor: '#0D21A1', borderRadius: '10px' }}
+                    className="btn"
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "..." : ">"}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Right Section */}
@@ -591,66 +758,93 @@ export default function Home() {
                                 <FaGripVertical />
                               </div>
                               <div className="flex-grow-1">
-                                {note.question && (
-                                  <p className="mb-1"><strong>Q:</strong> {note.question}</p>
-                                )}
                                 {editingNoteId === note.id ? (
-                                  <div className="d-flex gap-2 align-items-start">
+                                  <div>
+                                    <div className="d-flex justify-content-between align-items-start mb-2">
+                                      <div className="d-flex gap-2">
+                                        <button
+                                          style={{ backgroundColor: '#146FE1', borderColor: '#146FE1', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', fontWeight: 'bold' }}
+                                          className="btn btn-sm"
+                                          onClick={() => saveNoteEdit(note.id)}
+                                          title="Save note"
+                                        >
+                                          <FaCheck />
+                                        </button>
+                                        <button
+                                          style={{ backgroundColor: '#333333', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                          className="btn btn-sm"
+                                          onClick={() => {
+                                            setEditingNoteId(null);
+                                            setEditingNoteContent('');
+                                          }}
+                                          title="Cancel"
+                                        >
+                                          <FaTimes />
+                                        </button>
+                                      </div>
+                                    </div>
                                     <textarea
-                                      className="form-control"
+                                      className="form-control border-0"
                                       value={editingNoteContent}
                                       onChange={(e) => setEditingNoteContent(e.target.value)}
-                                      rows={3}
+                                      rows={5}
+                                      placeholder="Use '•' or '*' at the start of a line for bullet points"
+                                      style={{ 
+                                        fontFamily: 'monospace',
+                                        whiteSpace: 'pre-wrap',
+                                        backgroundColor: 'transparent',
+                                        resize: 'none'
+                                      }}
                                       autoFocus
                                     />
-                                    <button
-                                      className="btn btn-sm btn-success"
-                                      onClick={() => saveNoteEdit(note.id)}
-                                    >
-                                      <FaCheck />
-                                    </button>
-                                    <button
-                                      className="btn btn-sm btn-danger"
-                                      onClick={() => {
-                                        setEditingNoteId(null);
-                                        setEditingNoteContent('');
-                                      }}
-                                    >
-                                      <FaTimes />
-                                    </button>
                                   </div>
                                 ) : (
-                                  <p className="mb-0">
-                                    <strong>{note.answer ? 'A: ' : ''}</strong>
-                                    {note.answer || note.content}
-                                  </p>
+                                  <div>
+                                    <div className="d-flex justify-content-between align-items-start mb-2">
+                                      {note.contextRange && (
+                                        <button
+                                          style={{ backgroundColor: '#146FE1', borderColor: '#146FE1', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', fontWeight: 'bold' }}
+                                          className="btn btn-sm"
+                                          onClick={() => jumpToChatContext(note.contextRange)}
+                                          title="Jump to chat"
+                                        >
+                                          <FaArrowUp />
+                                        </button>
+                                      )}
+                                      <div className="d-flex gap-2">
+                                        <button
+                                          style={{ backgroundColor: '#333333', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                          className="btn btn-sm"
+                                          onClick={() => editNote(note.id)}
+                                          title="Edit note"
+                                        >
+                                          <FaEdit />
+                                        </button>
+                                        <button
+                                          style={{ backgroundColor: '#333333', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                          className="btn btn-sm delete-btn"
+                                          onClick={() => deleteNote(note.id)}
+                                          title="Delete note"
+                                        >
+                                          <FaTimes />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div className="mb-0 note-content">
+                                      {note.answer && <strong>A: </strong>}
+                                      <div
+                                        dangerouslySetInnerHTML={{
+                                          __html: parseAndSanitizeHTML(note.answer || note.content)
+                                        }}
+                                        style={{ 
+                                          display: 'inline',
+                                          lineHeight: '1.5'
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
                                 )}
                               </div>
-                            </div>
-                            <div className="d-flex gap-2">
-                              <Dropdown>
-                                <Dropdown.Toggle variant="link" size="sm" className="text-muted">
-                                  <BsThreeDotsVertical />
-                                </Dropdown.Toggle>
-                                <Dropdown.Menu>
-                                  <Dropdown.Item onClick={() => editNote(note.id)}>
-                                    <FaEdit className="me-2" /> Edit
-                                  </Dropdown.Item>
-                                  {sections.map(s => (
-                                    s.id !== section.id && (
-                                      <Dropdown.Item 
-                                        key={s.id}
-                                        onClick={() => moveNote(note.id, s.id)}
-                                      >
-                                        Move to {s.title}
-                                      </Dropdown.Item>
-                                    )
-                                  ))}
-                                  <Dropdown.Item onClick={() => deleteNote(note.id)}>
-                                    Delete
-                                  </Dropdown.Item>
-                                </Dropdown.Menu>
-                              </Dropdown>
                             </div>
                           </div>
                         </div>
