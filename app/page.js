@@ -76,27 +76,10 @@ export default function Home() {
           if (line.startsWith('data: ')) {
             const data = JSON.parse(line.slice(6));
 
-            // if data is done, then adds to chat history 
-            // and then sends that snippet to the notes 
-            // instead sending the last xx messages to notes every time and then getting a separate call made
-
             if (data.done) {
               setCurrentStream("");
               setChatHistory(data.history);
-              // Save the assistant's response as a note
-              const lastMessage = data.history[data.history.length - 1];
-              if (lastMessage.role === 'assistant') {
-                await fetch("/api/notes", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    chatId,
-                    messageId: lastMessage.id
-                  }),
-                });
-              }
+              // No longer automatically saving notes here
             } else {
               setCurrentStream(prev => prev + data.content);
             }
@@ -108,6 +91,50 @@ export default function Home() {
     } finally {
       setIsLoading(false);
       setMessage("");
+    }
+  };
+
+  const handleSaveNote = async (messages) => {
+    try {
+      // Format messages to match the expected structure
+      const formattedMessages = messages.map(msg => ({
+        id: msg.id || Date.now().toString(),
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp || Date.now()
+      }));
+
+      console.log('Sending to summary API:', {
+        chatId,
+        messages: formattedMessages,
+        originalMessages: messages
+      });
+
+      const response = await fetch("/api/summary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chatId,
+          messages: formattedMessages
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Summary API error response:', errorData);
+        throw new Error(errorData.error || 'Failed to generate summary');
+      }
+      const data = await response.json();
+      console.log('Summary API success response:', data);
+      
+      // Add the summarized note to the notes state
+      if (data.note) {
+        setNotes(prev => [...prev, data.note]);
+      }
+    } catch (error) {
+      console.error("Error saving note:", error);
     }
   };
 
@@ -418,12 +445,17 @@ export default function Home() {
                         <button
                           style={{ backgroundColor: '#EEC643', borderRadius: '10px' }}
                           className="btn btn-sm text-white"
-                          onClick={() => addNote({
-                            question: getLastUserInput(index),
-                            answer: msg.content,
-                            messageId: msg.id,
-                            type: 'message'
-                          })}
+                          onClick={() => {
+                            // Get the context messages (user question and assistant response)
+                            const contextMessages = chatHistory.slice(Math.max(0, index - 1), index + 1)
+                              .map(msg => ({
+                                id: msg.id,
+                                role: msg.role,
+                                content: msg.content,
+                                timestamp: Date.now()
+                              }));
+                            handleSaveNote(contextMessages);
+                          }}
                         >
                           Save to Notes
                         </button>
@@ -672,7 +704,7 @@ export default function Home() {
                                 ) : (
                                   <p className="mb-0">
                                     <strong>{note.answer ? 'A: ' : ''}</strong>
-                                    {note.answer || note.content}
+                                    <span dangerouslySetInnerHTML={{ __html: note.answer || note.content }} />
                                   </p>
                                 )}
                               </div>
