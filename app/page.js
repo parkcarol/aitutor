@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Dropdown from "react-bootstrap/Dropdown";
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { FaEdit, FaCheck, FaTimes, FaGripVertical } from 'react-icons/fa';
+import { FaEdit, FaCheck, FaTimes, FaGripVertical, FaSyncAlt, FaArrowRight, FaArrowUp } from 'react-icons/fa';
 
 export default function Home() {
   const [message, setMessage] = useState("");
@@ -17,11 +17,13 @@ export default function Home() {
     { id: 'default', title: 'General Notes', order: 0 }
   ]);
   const [editingSectionId, setEditingSectionId] = useState(null);
-  const chatEndRef = useRef(null);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingNoteContent, setEditingNoteContent] = useState('');
   const [newSectionTitle, setNewSectionTitle] = useState('');
   const [isAddingSectionMode, setIsAddingSectionMode] = useState(false);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
+  const [isDeleteHovered, setIsDeleteHovered] = useState(false);
+  const chatEndRef = useRef(null);
 
   // Log chat history and context changes
   useEffect(() => {
@@ -31,6 +33,13 @@ export default function Home() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatHistory])
+
+  // Add this new function to parse and sanitize HTML content
+  const parseAndSanitizeHTML = (content) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content, 'text/html');
+    return doc.body.innerHTML;
+  };
 
   const handleSubmit = async () => {
     if (!message.trim() || isLoading) return;
@@ -270,6 +279,26 @@ export default function Home() {
     }
   };
 
+  const jumpToChatContext = (contextRange) => {
+    if (!contextRange) return;
+    
+    // Find the message in chat history
+    const message = chatHistory.find(msg => msg.id === contextRange.lastMessageId);
+    if (!message) return;
+
+    // Scroll to the message
+    const messageElement = document.getElementById(`msg-${message.id}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedMessageId(message.id);
+      
+      // Remove highlight after 2 seconds
+      setTimeout(() => {
+        setHighlightedMessageId(null);
+      }, 2000);
+    }
+  };
+  
   const handleSectionDragStart = (e, sectionId) => {
     if (sectionId === 'default') {
       e.preventDefault();
@@ -390,6 +419,13 @@ export default function Home() {
       .drag-handle:hover {
         color: #333;
       }
+      button.delete-btn {
+        transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+      }
+      button.delete-btn:hover {
+        background-color:rgb(204, 50, 50) !important;
+        border-color: #9e3333 !important;
+      }
     `;
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
@@ -438,15 +474,28 @@ export default function Home() {
             <div className="d-flex flex-column justify-content-between" style={{ height: '100%' }}>
               <div style={{ height: '75vh' }} className="overflow-auto mb-3">
                 {chatHistory.map((msg, index) => (
-                  <div key={msg.id} className={`p-2 mb-2 ${msg.role === 'user' ? 'bg-light' : 'bg-info bg-opacity-10'}`}>
-                    <strong>{msg.role}:</strong> {msg.content}
+                  <div 
+                    key={msg.id} 
+                    id={`msg-${msg.id}`}
+                    className={`p-2 mb-2 ${msg.role === 'user' ? 'bg-light' : 'bg-info bg-opacity-10'} ${highlightedMessageId === msg.id ? 'border border-primary border-2' : ''}`}
+                    style={{
+                      transition: 'border-color 0.3s ease-in-out',
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <strong>{msg.role}:</strong>{' '}
+                    <div 
+                      dangerouslySetInnerHTML={{ 
+                        __html: parseAndSanitizeHTML(msg.content) 
+                      }} 
+                      style={{ display: 'inline' }}
+                    />
                     {msg.role === 'assistant' && (
                       <div className="mt-2">
                         <button
                           style={{ backgroundColor: '#EEC643', borderRadius: '10px' }}
                           className="btn btn-sm text-white"
                           onClick={() => {
-                            // Get the context messages (user question and assistant response)
                             const contextMessages = chatHistory.slice(Math.max(0, index - 1), index + 1)
                               .map(msg => ({
                                 id: msg.id,
@@ -466,7 +515,13 @@ export default function Home() {
                 <div ref={chatEndRef} />
                 {isLoading && currentStream && (
                   <div className="p-2 mb-2 bg-info bg-opacity-10">
-                    <strong>assistant:</strong> {currentStream}
+                    <strong>assistant:</strong>{' '}
+                    <div 
+                      dangerouslySetInnerHTML={{ 
+                        __html: parseAndSanitizeHTML(currentStream) 
+                      }} 
+                      style={{ display: 'inline' }}
+                    />
                   </div>
                 )}
               </div>
@@ -673,9 +728,6 @@ export default function Home() {
                                 <FaGripVertical />
                               </div>
                               <div className="flex-grow-1">
-                                {note.question && (
-                                  <p className="mb-1"><strong>Q:</strong> {note.question}</p>
-                                )}
                                 {editingNoteId === note.id ? (
                                   <div className="d-flex gap-2 align-items-start">
                                     <textarea
@@ -702,37 +754,74 @@ export default function Home() {
                                     </button>
                                   </div>
                                 ) : (
-                                  <p className="mb-0">
-                                    <strong>{note.answer ? 'A: ' : ''}</strong>
-                                    <span dangerouslySetInnerHTML={{ __html: note.answer || note.content }} />
-                                  </p>
+                                  <div>
+                                    <div className="d-flex justify-content-between align-items-start mb-2">
+                                      {note.contextRange && (
+                                        <button
+                                          style={{ backgroundColor: '#146FE1', borderColor: '#146FE1', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', fontWeight: 'bold' }}
+                                          className="btn btn-sm"
+                                          onClick={() => jumpToChatContext(note.contextRange)}
+                                          title="Jump to chat"
+                                        >
+                                          <FaArrowUp />
+                                        </button>
+                                      )}
+                                      <div className="d-flex gap-2">
+                                        <button
+                                          style={{ 
+                                            backgroundColor: '#333333', 
+                                            borderColor: '#333333', 
+                                            color: 'white', 
+                                            width: '24px', 
+                                            height: '24px', 
+                                            padding: '0px', 
+                                            fontSize: '14px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                          }}
+                                          className="btn btn-sm"
+                                          onClick={() => editNote(note.id)}
+                                          title="Edit note"
+                                        >
+                                          <FaEdit />
+                                        </button>
+                                        <button
+                                          style={{ 
+                                            backgroundColor: isDeleteHovered ? '#9e3333' : '#333333', 
+                                            borderColor: isDeleteHovered ? '#9e3333' : '#333333', 
+                                            color: 'white', 
+                                            width: '24px', 
+                                            height: '24px', 
+                                            padding: '0px', 
+                                            fontSize: '14px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            transition: 'all 0.2s ease-in-out'
+                                          }}
+                                          className="btn btn-sm"
+                                          onClick={() => deleteNote(note.id)}
+                                          onMouseEnter={() => setIsDeleteHovered(true)}
+                                          onMouseLeave={() => setIsDeleteHovered(false)}
+                                          title="Delete note"
+                                        >
+                                          <FaTimes />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div className="mb-0">
+                                      {note.answer && <strong>A: </strong>}
+                                      <div
+                                        dangerouslySetInnerHTML={{
+                                          __html: parseAndSanitizeHTML(note.answer || note.content)
+                                        }}
+                                        style={{ display: 'inline' }}
+                                      />
+                                    </div>
+                                  </div>
                                 )}
                               </div>
-                            </div>
-                            <div className="d-flex gap-2">
-                              <Dropdown>
-                                <Dropdown.Toggle variant="link" size="sm" className="text-muted">
-                                  <BsThreeDotsVertical />
-                                </Dropdown.Toggle>
-                                <Dropdown.Menu>
-                                  <Dropdown.Item onClick={() => editNote(note.id)}>
-                                    <FaEdit className="me-2" /> Edit
-                                  </Dropdown.Item>
-                                  {sections.map(s => (
-                                    s.id !== section.id && (
-                                      <Dropdown.Item 
-                                        key={s.id}
-                                        onClick={() => moveNote(note.id, s.id)}
-                                      >
-                                        Move to {s.title}
-                                      </Dropdown.Item>
-                                    )
-                                  ))}
-                                  <Dropdown.Item onClick={() => deleteNote(note.id)}>
-                                    Delete
-                                  </Dropdown.Item>
-                                </Dropdown.Menu>
-                              </Dropdown>
                             </div>
                           </div>
                         </div>

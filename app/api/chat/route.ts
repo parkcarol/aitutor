@@ -19,11 +19,11 @@ export async function POST(request: Request) {
         userId: "default-user", // TODO: Replace with actual user ID when auth is added
         context: {
           id: uuidv4(),
-          topic: "force and motion",
-          chapter: "motion in space",
-          subject: "physics",
-          gradeLevel: "Grade 9",
-          learningObjectives: ["motion in the context"],
+          topic: "algorithms 101",
+          chapter: "shortest path",
+          subject: "computer science",
+          gradeLevel: "Grade 10",
+          learningObjectives: ["what shortest path means","dijkstra's algorithm for shortest path","limitations of dijkstra's algorithm"],
           createdAt: now,
           updatedAt: now
         },
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     console.log("Current Chat History:", chatSessions[chatId].messages);
 
     // Create system prompt with context
-    const systemPrompt = `You are a tutor for a high school student. Make sure you guide the student and keep your content consise. Challenge the student by asking them questions to get them to the right answer, and give hints if they seem confused or frustrated. Never give them information without prompting them with a follow up question to test their knowledge of the concept. 
+    const systemPrompt = `You are a tutor for a high school student. Make sure you guide the student and keep your content consise. Challenge the student by asking them questions to get them to the right answer, and give hints if they seem confused or frustrated. Never give them information without prompting them with a follow up question to test their knowledge of the concept. When you want to add a line break, use '<br />' (with spaces) instead of just '<br>'.
         ${chatSessions[chatId].context.subject ? `Subject: ${chatSessions[chatId].context.subject}` : ''}
         ${chatSessions[chatId].context.topic ? `Topic: ${chatSessions[chatId].context.topic}` : ''}
         ${chatSessions[chatId].context.chapter ? `Chapter: ${chatSessions[chatId].context.chapter}` : ''}
