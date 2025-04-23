@@ -408,58 +408,108 @@ export default function Home() {
           <div style={{ height: '92vh', backgroundColor: '#DADADA', borderRadius: '10px' }} className="d-flex flex-column justify-content-between w-50 mt-2 p-2 border shadow">
             <h4 className="pb-2 border-bottom">Chat</h4>
 
-            <div style={{ height: '80vh' }} className="overflow-auto mb-3">
-              {chatHistory.map((msg, index) => (
-                <div key={msg.id} className={`p-2 mb-2 ${msg.role === 'user' ? 'bg-light' : 'bg-info bg-opacity-10'}`}>
-                  <strong>{msg.role}:</strong> {msg.content}
-                  {msg.role === 'assistant' && (
-                    <div className="mt-2">
-                      <button
-                        style={{ backgroundColor: '#EEC643', borderRadius: '10px' }}
-                        className="btn btn-sm text-white"
-                        onClick={() => addNote({
-                          question: getLastUserInput(index),
-                          answer: msg.content,
-                          messageId: msg.id,
-                          type: 'message'
-                        })}
-                      >
-                        Save to Notes
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-              <div ref={chatEndRef} />
-              {isLoading && currentStream && (
-                <div className="p-2 mb-2 bg-info bg-opacity-10">
-                  <strong>assistant:</strong> {currentStream}
-                </div>
-              )}
-            </div>
+            <div className="d-flex flex-column justify-content-between" style={{ height: '100%' }}>
+              <div style={{ height: '75vh' }} className="overflow-auto mb-3">
+                {chatHistory.map((msg, index) => (
+                  <div key={msg.id} className={`p-2 mb-2 ${msg.role === 'user' ? 'bg-light' : 'bg-info bg-opacity-10'}`}>
+                    <strong>{msg.role}:</strong> {msg.content}
+                    {msg.role === 'assistant' && (
+                      <div className="mt-2">
+                        <button
+                          style={{ backgroundColor: '#EEC643', borderRadius: '10px' }}
+                          className="btn btn-sm text-white"
+                          onClick={() => addNote({
+                            question: getLastUserInput(index),
+                            answer: msg.content,
+                            messageId: msg.id,
+                            type: 'message'
+                          })}
+                        >
+                          Save to Notes
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <div ref={chatEndRef} />
+                {isLoading && currentStream && (
+                  <div className="p-2 mb-2 bg-info bg-opacity-10">
+                    <strong>assistant:</strong> {currentStream}
+                  </div>
+                )}
+              </div>
 
-            <div style={{ borderRadius: '10px' }} className="input-group mb-3 p-1 bg-white">
-              <input
-                type="text"
-                style={{ border: '0px', borderRadius: '10px' }}
-                className="form-control p-2"
-                placeholder="Chat with me here"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyUp={(e) => e.key === 'Enter' && handleSubmit()}
-                disabled={isLoading}
-              />
-              <button
-                style={{ color: 'white', backgroundColor: '#0D21A1', borderRadius: '10px' }}
-                className="btn"
-                type="button"
-                onClick={handleSubmit}
-                disabled={isLoading}
-              >
-                {isLoading ? "..." : ">"}
-              </button>
-            </div>
+              <div>
+                {/* Pre-prompting buttons */}
+                <div className="d-flex flex-row gap-2 mb-3">
+                  <button
+                    style={{ 
+                      backgroundColor: 'black', 
+                      color: 'white', 
+                      borderRadius: '10px',
+                      padding: '4px 12px',
+                      height: '32px',
+                      flex: '1'
+                    }}
+                    className="btn"
+                    onClick={() => setMessage("What is force?")}
+                  >
+                    What is force?
+                  </button>
+                  <button
+                    style={{ 
+                      backgroundColor: 'black', 
+                      color: 'white', 
+                      borderRadius: '10px',
+                      padding: '4px 12px',
+                      height: '32px',
+                      flex: '1'
+                    }}
+                    className="btn"
+                    onClick={() => setMessage("What is thermodynamics?")}
+                  >
+                    What is thermodynamics?
+                  </button>
+                  <button
+                    style={{ 
+                      backgroundColor: 'black', 
+                      color: 'white', 
+                      borderRadius: '10px',
+                      padding: '4px 12px',
+                      height: '32px',
+                      flex: '1'
+                    }}
+                    className="btn"
+                    onClick={() => setMessage("How is motion defined?")}
+                  >
+                    How is motion defined?
+                  </button>
+                </div>
 
+                {/* Chat input */}
+                <div style={{ borderRadius: '10px' }} className="input-group mb-3 p-1 bg-white">
+                  <input
+                    type="text"
+                    style={{ border: '0px', borderRadius: '10px' }}
+                    className="form-control p-2"
+                    placeholder="Chat with me here"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyUp={(e) => e.key === 'Enter' && handleSubmit()}
+                    disabled={isLoading}
+                  />
+                  <button
+                    style={{ color: 'white', backgroundColor: '#0D21A1', borderRadius: '10px' }}
+                    className="btn"
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "..." : ">"}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Right Section */}
