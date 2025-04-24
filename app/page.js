@@ -7,6 +7,8 @@ import { BsThreeDotsVertical } from 'react-icons/bs';
 import { FaEdit, FaCheck, FaTimes, FaGripVertical, FaSyncAlt, FaArrowRight, FaArrowAltCircleUp, FaQuestionCircle, FaCog } from 'react-icons/fa';
 import { GiBrain } from 'react-icons/gi';
 import { HiLightBulb } from 'react-icons/hi';
+import QuizModal from './components/QuizModal';
+import { chatSessions } from "../lib/store";
 
 export default function Home() {
   const [message, setMessage] = useState("");
@@ -33,6 +35,53 @@ export default function Home() {
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const [isDeleteHovered, setIsDeleteHovered] = useState(false);
   const chatEndRef = useRef(null);
+  const [isQuizMode, setIsQuizMode] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [quizQuestions, setQuizQuestions] = useState([]);
+  const [isLoadingQuiz, setIsLoadingQuiz] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
+
+  // Initialize chat session
+  useEffect(() => {
+    const initChat = async () => {
+      try {
+        // Initialize the chat session
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            chatId,
+            message: "", // Empty message for initialization
+            context: {
+              topic: "Motion and Force",
+              chapter: "Motion in the context of a vacuum",
+              subject: "Physics",
+              gradeLevel: "Grade 9",
+              learningObjectives: [
+                "Basic definitions of motion, force",
+                "Motion in the context of space",
+                "Definitions of force",
+                "relationship between force and motion"
+              ]
+            }
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to initialize chat session');
+        }
+
+        console.log("Chat session initialized");
+      } catch (error) {
+        console.error("Error initializing chat:", error);
+      }
+    };
+
+    initChat();
+  }, [chatId]);
 
   // Log chat history and context changes
   useEffect(() => {
@@ -466,10 +515,88 @@ export default function Home() {
         margin: 8px 0;
         content: "";
       }
+      @keyframes loading-progress {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+      @keyframes spinner-border {
+        to { transform: rotate(360deg); }
+      }
+      .quiz-spinner {
+        width: 2rem;
+        height: 2rem;
+        border: 0.2em solid #28a745;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spinner-border .75s linear infinite;
+        margin-top: 1.5rem;
+      }
     `;
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
   }, []);
+
+  const toggleQuizMode = async () => {
+    if (!isQuizMode) {
+      // Switch to quiz mode immediately
+      setIsQuizMode(true);
+      setIsLoadingQuiz(true);
+      try {
+        console.log("Fetching quiz questions...");
+        const response = await fetch("/api/quiz", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ 
+            messages: chatHistory,
+            context: chatSessions[chatId]?.context
+          }),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Quiz API error:', errorData);
+          throw new Error(errorData.details || errorData.error || 'Failed to fetch quiz questions');
+        }
+
+        console.log("Quiz response received");
+        const data = await response.json();
+        console.log("Quiz data:", data);
+
+        if (!data.questions || !Array.isArray(data.questions)) {
+          throw new Error('Invalid quiz data format');
+        }
+
+        setQuizQuestions(data.questions);
+        setCurrentQuestion(0);
+        setSelectedAnswer(null);
+      } catch (error) {
+        console.error('Error fetching quiz:', error);
+        alert('Failed to load quiz questions. Please try again.');
+        // Don't switch back to chat mode on error, just show error state
+      } finally {
+        setIsLoadingQuiz(false);
+      }
+    } else {
+      // Switch back to chat mode
+      setIsQuizMode(false);
+      setQuizQuestions([]);
+      setCurrentQuestion(0);
+      setSelectedAnswer(null);
+    }
+  };
+
+  const handleAnswerSelect = (answer) => {
+    setSelectedAnswer(answer);
+  };
+
+  const handleNextQuestion = () => {
+    if (currentQuestion < quizQuestions.length - 1) {
+      setCurrentQuestion(prev => prev + 1);
+      setSelectedAnswer(null);
+    }
+  };
 
   return (
     <div>
@@ -477,29 +604,23 @@ export default function Home() {
       {/* Navbar */}
       <nav className="navbar navbar-expand-lg bg-body-tertiary">
         <div className="container-fluid">
-
           <a className="navbar-brand" href="#">AITutor</a>
           <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
             <span className="navbar-toggler-icon"></span>
           </button>
 
-          {/* To do: user authentication */}
-          {/* <div className="col-md-3 text-end">
-            <button type="button" className="btn btn-outline-primary me-2">Login</button>
-            <button type="button" className="btn btn-primary">Sign-up</button>
-          </div> */}
-
-          <Dropdown>
-            <Dropdown.Toggle variant="" id="dropdown-basic" className="opacity-50">
-              <Image src="/user.png" alt="mdo" width="32" height="32" className="rounded-circle" />
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-              <Dropdown.Item href="#/action-1">Profile</Dropdown.Item>
-              <Dropdown.Item href="#/action-2">Settings</Dropdown.Item>
-              <Dropdown.Item href="#/action-3">Sign out</Dropdown.Item>
-            </Dropdown.Menu>
-          </Dropdown>
-
+          <div className="d-flex align-items-center gap-2">
+            <Dropdown>
+              <Dropdown.Toggle variant="" id="dropdown-basic" className="opacity-50">
+                <Image src="/user.png" alt="mdo" width="32" height="32" className="rounded-circle" />
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                <Dropdown.Item href="#/action-1">Profile</Dropdown.Item>
+                <Dropdown.Item href="#/action-2">Settings</Dropdown.Item>
+                <Dropdown.Item href="#/action-3">Sign out</Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
+          </div>
         </div>
       </nav>
 
@@ -510,12 +631,12 @@ export default function Home() {
           {/* Left Section */}
           <div style={{ height: 'calc(100vh - 80px)', backgroundColor: '#DADADA', borderRadius: '10px' }} className="d-flex flex-column w-50 mt-2 p-2 border shadow">
             <div className="d-flex justify-content-between align-items-center pb-2 border-bottom">
-              <h4 className="m-0">Chat</h4>
+              <h4 className="m-0">{isQuizMode ? "Quiz" : "Chat"}</h4>
               <button
                 style={{ 
-                  backgroundColor: 'transparent', 
-                  borderColor: '#333333', 
-                  color: '#333333', 
+                  backgroundColor: isQuizMode ? '#28a745' : 'transparent', 
+                  borderColor: isQuizMode ? '#28a745' : '#333333', 
+                  color: isQuizMode ? 'white' : '#333333', 
                   width: '32px', 
                   height: '32px', 
                   padding: '0px', 
@@ -526,169 +647,247 @@ export default function Home() {
                   transition: 'all 0.2s ease-in-out'
                 }}
                 className="btn btn-sm"
-                title="Quiz Mode"
+                title={isQuizMode ? "Return to Chat" : "Quiz Mode"}
+                onClick={toggleQuizMode}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#28a745';
-                  e.currentTarget.style.borderColor = '#28a745';
-                  e.currentTarget.style.color = 'white';
+                  if (!isQuizMode) {
+                    e.currentTarget.style.backgroundColor = '#28a745';
+                    e.currentTarget.style.borderColor = '#28a745';
+                    e.currentTarget.style.color = 'white';
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.borderColor = '#333333';
-                  e.currentTarget.style.color = '#333333';
+                  if (!isQuizMode) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.borderColor = '#333333';
+                    e.currentTarget.style.color = '#333333';
+                  }
                 }}
               >
                 <HiLightBulb />
               </button>
             </div>
 
-            <div className="d-flex flex-column" style={{ height: 'calc(100% - 40px)' }}>
-              <div style={{ height: 'calc(100% - 120px)', overflowY: 'auto' }} className="mb-3">
-                {chatHistory.map((msg, index) => (
-                  <div 
-                    key={msg.id} 
-                    id={`msg-${msg.id}`}
-                    className={`p-2 mb-2 ${msg.role === 'user' ? 'bg-light' : 'bg-info bg-opacity-10'} ${highlightedMessageId === msg.id ? 'border border-primary border-2' : ''}`}
-                    style={{
-                      transition: 'border-color 0.3s ease-in-out',
-                      borderRadius: '8px'
-                    }}
-                  >
-                    <strong>{msg.role}:</strong>{' '}
-                    <div 
-                      dangerouslySetInnerHTML={{ 
-                        __html: parseAndSanitizeHTML(msg.content) 
-                      }} 
-                      style={{ display: 'inline' }}
-                    />
-                    {msg.role === 'assistant' && (
-                      <div className="mt-2">
-                        <button
-                          style={{ backgroundColor: '#EEC643', borderRadius: '10px' }}
-                          className="btn btn-sm text-white"
-                          onClick={() => {
-                            const contextMessages = chatHistory.slice(Math.max(0, index - 1), index + 1)
-                              .map(msg => ({
-                                id: msg.id,
-                                role: msg.role,
-                                content: msg.content,
-                                timestamp: Date.now()
-                              }));
-                            handleSaveNote(contextMessages);
-                          }}
-                        >
-                          Save to Notes
-                        </button>
+            {isQuizMode ? (
+              <div className="flex-grow-1 d-flex flex-column">
+                {isLoadingQuiz ? (
+                  <div className="d-flex flex-column justify-content-center align-items-center h-100">
+                    <div className="text-center">
+                      {/* <h5 style={{ fontSize: '24px', fontWeight: '500', marginBottom: '12px' }}>
+                        Generating Quiz Questions...
+                      </h5> */}
+                      <p className="text-muted" style={{ fontSize: '20px' }}>
+                        Quiz questions are cooking!
+                      </p>
+                      <div className="spinner-border text-success mt-4" style={{ width: '3rem', height: '3rem' }} role="status">
+                        <span className="visually-hidden">Loading...</span>
                       </div>
-                    )}
+                    </div>
                   </div>
-                ))}
-                <div ref={chatEndRef} />
-                {isLoading && currentStream && (
-                  <div className="p-2 mb-2 bg-info bg-opacity-10">
-                    <strong>assistant:</strong>{' '}
-                    <div 
-                      dangerouslySetInnerHTML={{ 
-                        __html: parseAndSanitizeHTML(currentStream) 
-                      }} 
-                      style={{ display: 'inline' }}
-                    />
+                ) : quizQuestions.length > 0 ? (
+                  <div className="p-4">
+                    <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+                      <div className="mb-3">
+                        <small className="text-muted">Question {currentQuestion + 1} of {quizQuestions.length}</small>
+                      </div>
+                      <h5 className="mb-4">{quizQuestions[currentQuestion].question}</h5>
+                      <div className="d-grid gap-3">
+                        {quizQuestions[currentQuestion].options.map((option, index) => (
+                          <button
+                            key={index}
+                            className={`btn ${
+                              selectedAnswer === option[0]
+                                ? 'btn-primary'
+                                : 'btn-outline-primary'
+                            } text-start`}
+                            onClick={() => handleAnswerSelect(option[0])}
+                            disabled={selectedAnswer !== null}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                      {selectedAnswer && (
+                        <div className="mt-4">
+                          <div className={`alert ${
+                            selectedAnswer === quizQuestions[currentQuestion].correctAnswer
+                              ? 'alert-success'
+                              : 'alert-danger'
+                          }`}>
+                            <h6 className="mb-2">
+                              {selectedAnswer === quizQuestions[currentQuestion].correctAnswer
+                                ? 'Correct!'
+                                : 'Incorrect'}
+                            </h6>
+                            <p className="mb-0">{quizQuestions[currentQuestion].explanation}</p>
+                          </div>
+                          {currentQuestion < quizQuestions.length - 1 && (
+                            <button
+                              className="btn btn-primary mt-3"
+                              onClick={handleNextQuestion}
+                            >
+                              Next Question
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center p-4">
+                    <p>No quiz questions available.</p>
                   </div>
                 )}
               </div>
-
-              <div className="mt-auto">
-                {/* Pre-prompting buttons */}
-                <div className="d-flex flex-row gap-2 mb-3">
-                  <button
-                    style={{ 
-                      backgroundColor: '#333333', 
-                      color: 'white', 
-                      borderRadius: '10px',
-                      padding: '8px 12px',
-                      height: '48px',
-                      flex: '1',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textAlign: 'center',
-                      lineHeight: '1.2',
-                      whiteSpace: 'normal',
-                      wordWrap: 'break-word'
-                    }}
-                    className="btn"
-                    onClick={() => setMessage("What is force?")}
-                  >
-                    What is<br />force?
-                  </button>
-                  <button
-                    style={{ 
-                      backgroundColor: '#333333', 
-                      color: 'white', 
-                      borderRadius: '10px',
-                      padding: '8px 12px',
-                      height: '48px',
-                      flex: '1',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textAlign: 'center',
-                      lineHeight: '1.2',
-                      whiteSpace: 'normal',
-                      wordWrap: 'break-word'
-                    }}
-                    className="btn"
-                    onClick={() => setMessage("How do objects move in space?")}
-                  >
-                    How do objects<br />move in space?
-                  </button>
-                  <button
-                    style={{ 
-                      backgroundColor: '#333333', 
-                      color: 'white', 
-                      borderRadius: '10px',
-                      padding: '8px 12px',
-                      height: '48px',
-                      flex: '1',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textAlign: 'center',
-                      lineHeight: '1.2',
-                      whiteSpace: 'normal',
-                      wordWrap: 'break-word'
-                    }}
-                    className="btn"
-                    onClick={() => setMessage("How is motion defined?")}
-                  >
-                    How is motion<br />defined?
-                  </button>
+            ) : (
+              <div className="d-flex flex-column" style={{ height: 'calc(100% - 40px)' }}>
+                <div style={{ height: 'calc(100% - 120px)', overflowY: 'auto' }} className="mb-3">
+                  {chatHistory.map((msg, index) => (
+                    <div 
+                      key={msg.id} 
+                      id={`msg-${msg.id}`}
+                      className={`p-2 mb-2 ${msg.role === 'user' ? 'bg-light' : 'bg-info bg-opacity-10'} ${highlightedMessageId === msg.id ? 'border border-primary border-2' : ''}`}
+                      style={{
+                        transition: 'border-color 0.3s ease-in-out',
+                        borderRadius: '8px'
+                      }}
+                    >
+                      <strong>{msg.role}:</strong>{' '}
+                      <div 
+                        dangerouslySetInnerHTML={{ 
+                          __html: parseAndSanitizeHTML(msg.content) 
+                        }} 
+                        style={{ display: 'inline' }}
+                      />
+                      {msg.role === 'assistant' && (
+                        <div className="mt-2">
+                          <button
+                            style={{ backgroundColor: '#EEC643', borderRadius: '10px' }}
+                            className="btn btn-sm text-white"
+                            onClick={() => {
+                              const contextMessages = chatHistory.slice(Math.max(0, index - 1), index + 1)
+                                .map(msg => ({
+                                  id: msg.id,
+                                  role: msg.role,
+                                  content: msg.content,
+                                  timestamp: Date.now()
+                                }));
+                              handleSaveNote(contextMessages);
+                            }}
+                          >
+                            Save to Notes
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  <div ref={chatEndRef} />
+                  {isLoading && currentStream && (
+                    <div className="p-2 mb-2 bg-info bg-opacity-10">
+                      <strong>assistant:</strong>{' '}
+                      <div 
+                        dangerouslySetInnerHTML={{ 
+                          __html: parseAndSanitizeHTML(currentStream) 
+                        }} 
+                        style={{ display: 'inline' }}
+                      />
+                    </div>
+                  )}
                 </div>
 
-                {/* Chat input */}
-                <div style={{ borderRadius: '10px' }} className="input-group mb-3 p-1 bg-white">
-                  <input
-                    type="text"
-                    style={{ border: '0px', borderRadius: '10px' }}
-                    className="form-control p-2"
-                    placeholder="Chat with me here"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyUp={(e) => e.key === 'Enter' && handleSubmit()}
-                    disabled={isLoading}
-                  />
-                  <button
-                    style={{ color: 'white', backgroundColor: '#0D21A1', borderRadius: '10px' }}
-                    className="btn"
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "..." : ">"}
-                  </button>
+                <div className="mt-auto">
+                  {/* Pre-prompting buttons */}
+                  <div className="d-flex flex-row gap-2 mb-3">
+                    <button
+                      style={{ 
+                        backgroundColor: '#333333', 
+                        color: 'white', 
+                        borderRadius: '10px',
+                        padding: '8px 12px',
+                        height: '48px',
+                        flex: '1',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        lineHeight: '1.2',
+                        whiteSpace: 'normal',
+                        wordWrap: 'break-word'
+                      }}
+                      className="btn"
+                      onClick={() => setMessage("What is force?")}
+                    >
+                      What is<br />force?
+                    </button>
+                    <button
+                      style={{ 
+                        backgroundColor: '#333333', 
+                        color: 'white', 
+                        borderRadius: '10px',
+                        padding: '8px 12px',
+                        height: '48px',
+                        flex: '1',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        lineHeight: '1.2',
+                        whiteSpace: 'normal',
+                        wordWrap: 'break-word'
+                      }}
+                      className="btn"
+                      onClick={() => setMessage("How do objects move in space?")}
+                    >
+                      How do objects<br />move in space?
+                    </button>
+                    <button
+                      style={{ 
+                        backgroundColor: '#333333', 
+                        color: 'white', 
+                        borderRadius: '10px',
+                        padding: '8px 12px',
+                        height: '48px',
+                        flex: '1',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        lineHeight: '1.2',
+                        whiteSpace: 'normal',
+                        wordWrap: 'break-word'
+                      }}
+                      className="btn"
+                      onClick={() => setMessage("How is motion defined?")}
+                    >
+                      How is motion<br />defined?
+                    </button>
+                  </div>
+
+                  {/* Chat input */}
+                  <div style={{ borderRadius: '10px' }} className="input-group mb-3 p-1 bg-white">
+                    <input
+                      type="text"
+                      style={{ border: '0px', borderRadius: '10px' }}
+                      className="form-control p-2"
+                      placeholder="Chat with me here"
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      onKeyUp={(e) => e.key === 'Enter' && handleSubmit()}
+                      disabled={isLoading}
+                    />
+                    <button
+                      style={{ color: 'white', backgroundColor: '#0D21A1', borderRadius: '10px' }}
+                      className="btn"
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "..." : ">"}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Right Section */}
@@ -937,6 +1136,13 @@ export default function Home() {
 
         </div>
       </div>
+
+      <QuizModal
+        show={showQuiz}
+        onHide={() => setShowQuiz(false)}
+        messages={chatHistory}
+        context={chatSessions[chatId]?.context}
+      />
     </div >
   );
 }
