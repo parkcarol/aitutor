@@ -19,11 +19,11 @@ export async function POST(request: Request) {
         userId: "default-user", // TODO: Replace with actual user ID when auth is added
         context: {
           id: uuidv4(),
-          topic: "algorithms 101",
-          chapter: "shortest path",
-          subject: "computer science",
-          gradeLevel: "Grade 10",
-          learningObjectives: ["what shortest path means","dijkstra's algorithm for shortest path","limitations of dijkstra's algorithm"],
+          topic: "Motion and Force",
+          chapter: "Motion in the context of a vacuum",
+          subject: "Physics",
+          gradeLevel: "Grade 9",
+          learningObjectives: ["Basic definitions of motion, force","Motion in the context of space","Definitions of force", "relationship between force and motion"],
           createdAt: now,
           updatedAt: now
         },
