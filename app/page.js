@@ -4,8 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Dropdown from "react-bootstrap/Dropdown";
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { FaEdit, FaCheck, FaTimes, FaGripVertical, FaSyncAlt, FaArrowRight, FaArrowAltCircleUp } from 'react-icons/fa';
+import { FaEdit, FaCheck, FaTimes, FaGripVertical, FaSyncAlt, FaArrowRight, FaArrowAltCircleUp, FaQuestionCircle, FaCog } from 'react-icons/fa';
 import { GiBrain } from 'react-icons/gi';
+import { HiLightBulb } from 'react-icons/hi';
 
 export default function Home() {
   const [message, setMessage] = useState("");
@@ -13,7 +14,14 @@ export default function Home() {
   const [chatId] = useState("default-chat");
   const [isLoading, setIsLoading] = useState(false);
   const [currentStream, setCurrentStream] = useState("");
-  const [notes, setNotes] = useState([]);
+  const [notes, setNotes] = useState([
+    {
+      id: 'default-note',
+      content: 'Click on Save to Notes and your tutor will generate notes here!',
+      sectionId: 'default',
+      timestamp: Date.now()
+    }
+  ]);
   const [sections, setSections] = useState([
     { id: 'default', title: 'General Notes', order: 0 }
   ]);
@@ -37,6 +45,7 @@ export default function Home() {
 
   // Add this new function to parse and sanitize HTML content
   const parseAndSanitizeHTML = (content) => {
+    if (typeof window === 'undefined') return content; // Return raw content on server-side
     const parser = new DOMParser();
     const doc = parser.parseFromString(content, 'text/html');
     return doc.body.innerHTML;
@@ -500,7 +509,38 @@ export default function Home() {
 
           {/* Left Section */}
           <div style={{ height: 'calc(100vh - 80px)', backgroundColor: '#DADADA', borderRadius: '10px' }} className="d-flex flex-column w-50 mt-2 p-2 border shadow">
-            <h4 className="pb-2 border-bottom">Chat</h4>
+            <div className="d-flex justify-content-between align-items-center pb-2 border-bottom">
+              <h4 className="m-0">Chat</h4>
+              <button
+                style={{ 
+                  backgroundColor: 'transparent', 
+                  borderColor: '#333333', 
+                  color: '#333333', 
+                  width: '32px', 
+                  height: '32px', 
+                  padding: '0px', 
+                  fontSize: '18px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease-in-out'
+                }}
+                className="btn btn-sm"
+                title="Quiz Mode"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#28a745';
+                  e.currentTarget.style.borderColor = '#28a745';
+                  e.currentTarget.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.borderColor = '#333333';
+                  e.currentTarget.style.color = '#333333';
+                }}
+              >
+                <HiLightBulb />
+              </button>
+            </div>
 
             <div className="d-flex flex-column" style={{ height: 'calc(100% - 40px)' }}>
               <div style={{ height: 'calc(100% - 120px)', overflowY: 'auto' }} className="mb-3">
@@ -852,7 +892,13 @@ export default function Home() {
                                         }}
                                         style={{ 
                                           display: 'inline',
-                                          lineHeight: '1.5'
+                                          lineHeight: '1.5',
+                                          ...(note.id === 'default-note' ? {
+                                            color: '#666',
+                                            fontStyle: 'italic',
+                                            textAlign: 'center',
+                                            padding: '20px 0'
+                                          } : {})
                                         }}
                                       />
                                     </div>
