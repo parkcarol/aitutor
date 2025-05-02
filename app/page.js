@@ -196,7 +196,7 @@ export default function Home() {
       }
       const data = await response.json();
       console.log('Summary API success response:', data);
-      
+
       // Add the summarized note to the notes state
       if (data.note) {
         setNotes(prev => [...prev, data.note]);
@@ -219,7 +219,7 @@ export default function Home() {
   };
 
   const updateSectionTitle = (sectionId, newTitle) => {
-    setSections(prev => prev.map(section => 
+    setSections(prev => prev.map(section =>
       section.id === sectionId ? { ...section, title: newTitle } : section
     ));
     setEditingSectionId(null);
@@ -228,7 +228,7 @@ export default function Home() {
   const deleteSection = (sectionId) => {
     setSections(prev => prev.filter(section => section.id !== sectionId));
     // Move notes from deleted section to default section
-    setNotes(prev => prev.map(note => 
+    setNotes(prev => prev.map(note =>
       note.sectionId === sectionId ? { ...note, sectionId: 'default' } : note
     ));
   };
@@ -297,8 +297,8 @@ export default function Home() {
       })
       .join('<br />');
 
-    setNotes(prev => prev.map(note => 
-      note.id === noteId 
+    setNotes(prev => prev.map(note =>
+      note.id === noteId
         ? { ...note, answer: formattedContent, content: formattedContent }
         : note
     ));
@@ -358,7 +358,7 @@ export default function Home() {
 
   const jumpToChatContext = (contextRange) => {
     if (!contextRange) return;
-    
+
     // Find the message in chat history
     const message = chatHistory.find(msg => msg.id === contextRange.lastMessageId);
     if (!message) return;
@@ -368,14 +368,14 @@ export default function Home() {
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setHighlightedMessageId(message.id);
-      
+
       // Remove highlight after 2 seconds
       setTimeout(() => {
         setHighlightedMessageId(null);
       }, 2000);
     }
   };
-  
+
   const handleSectionDragStart = (e, sectionId) => {
     if (sectionId === 'default') {
       e.preventDefault();
@@ -451,7 +451,7 @@ export default function Home() {
 
         // Remove the dragged section
         const [draggedSection] = newSections.splice(draggedIndex, 1);
-        
+
         // Calculate new position
         let newPosition = dropAfter ? targetIndex : targetIndex;
         // If we're moving forward and dropping after, we need to decrease the target index
@@ -460,7 +460,7 @@ export default function Home() {
         }
         // Ensure we don't place before the default section
         newPosition = Math.max(1, newPosition);
-        
+
         // Insert at new position
         newSections.splice(newPosition, 0, draggedSection);
         return newSections;
@@ -548,12 +548,12 @@ export default function Home() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             messages: chatHistory,
             context: chatSessions[chatId]?.context
           }),
         });
-        
+
         if (!response.ok) {
           const errorData = await response.json();
           console.error('Quiz API error:', errorData);
@@ -589,6 +589,13 @@ export default function Home() {
 
   const handleAnswerSelect = (answer) => {
     setSelectedAnswer(answer);
+  };
+
+  const handlePreviousQuestion = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(currentQuestion - 1);
+      setSelectedAnswer(null); // optional: clear selection
+    }
   };
 
   const handleNextQuestion = () => {
@@ -633,16 +640,16 @@ export default function Home() {
             <div className="d-flex justify-content-between align-items-center pb-2 border-bottom">
               <h4 className="m-0">{isQuizMode ? "Quiz" : "Chat"}</h4>
               <button
-                style={{ 
-                  backgroundColor: isQuizMode ? '#28a745' : 'transparent', 
-                  borderColor: isQuizMode ? '#28a745' : '#333333', 
-                  color: isQuizMode ? 'white' : '#333333', 
-                  width: '32px', 
-                  height: '32px', 
-                  padding: '0px', 
-                  fontSize: '18px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                style={{
+                  backgroundColor: isQuizMode ? '#28a745' : 'transparent',
+                  borderColor: isQuizMode ? '#28a745' : '#333333',
+                  color: isQuizMode ? 'white' : '#333333',
+                  width: '32px',
+                  height: '32px',
+                  padding: '0px',
+                  fontSize: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: 'center',
                   transition: 'all 0.2s ease-in-out'
                 }}
@@ -687,33 +694,40 @@ export default function Home() {
                 ) : quizQuestions.length > 0 ? (
                   <div className="p-4">
                     <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
-                      <div className="mb-3">
-                        <small className="text-muted">Question {currentQuestion + 1} of {quizQuestions.length}</small>
+                      <div className="flex-column align-items-center card text-center mb-3 border-0" style={{ minHeight: '200px', backgroundColor: '#EEF0F2' }}>
+                        <div className="d-flex flex-column align-items-center justify-content-center card-body" style={{ maxWidth: '300px' }}>
+                          <small className="text-muted">Question {currentQuestion + 1} of {quizQuestions.length}</small>
+                          <h5 className="mb-4">{quizQuestions[currentQuestion].question}</h5>
+                        </div>
                       </div>
-                      <h5 className="mb-4">{quizQuestions[currentQuestion].question}</h5>
-                      <div className="d-grid gap-3">
+                      <div className="d-flex flex-wrap">
                         {quizQuestions[currentQuestion].options.map((option, index) => (
-                          <button
-                            key={index}
-                            className={`btn ${
-                              selectedAnswer === option[0]
-                                ? 'btn-primary'
-                                : 'btn-outline-primary'
-                            } text-start`}
-                            onClick={() => handleAnswerSelect(option[0])}
-                            disabled={selectedAnswer !== null}
-                          >
-                            {option}
-                          </button>
+                          <div key={index} className="w-50 p-1">
+                            <button
+                              key={index}
+                              className={`btn ${selectedAnswer === option[0]
+                                ? 'btn-secondary'
+                                : 'btn-light'
+                                } text-start w-100`}
+                              onClick={() => handleAnswerSelect(option[0])}
+                              disabled={selectedAnswer !== null}
+                              style={{ height: '80px', borderRadius: '10px' }}
+                            >
+                              <span className="rounded-circle bg-light text-dark fw-bold d-inline-flex justify-content-center align-items-center me-3" style={{ width: '32px', height: '32px' }}>
+
+                                {option[0]}
+                              </span>
+                              <span>{option.slice(3)}</span>
+                            </button>
+                          </div>
                         ))}
                       </div>
                       {selectedAnswer && (
                         <div className="mt-4">
-                          <div className={`alert ${
-                            selectedAnswer === quizQuestions[currentQuestion].correctAnswer
-                              ? 'alert-success'
-                              : 'alert-danger'
-                          }`}>
+                          <div className={`alert ${selectedAnswer === quizQuestions[currentQuestion].correctAnswer
+                            ? 'alert-success'
+                            : 'alert-danger'
+                            }`}>
                             <h6 className="mb-2">
                               {selectedAnswer === quizQuestions[currentQuestion].correctAnswer
                                 ? 'Correct!'
@@ -721,14 +735,26 @@ export default function Home() {
                             </h6>
                             <p className="mb-0">{quizQuestions[currentQuestion].explanation}</p>
                           </div>
-                          {currentQuestion < quizQuestions.length - 1 && (
-                            <button
-                              className="btn btn-primary mt-3"
-                              onClick={handleNextQuestion}
-                            >
-                              Next Question
-                            </button>
-                          )}
+                          <div className="d-flex justify-content-between mt-3">
+                            {currentQuestion > 0 ? (
+                              <button
+                                className="btn"
+                                onClick={handlePreviousQuestion}
+                                style={{ height: '80px', borderRadius: '10px', backgroundColor: '#0D21A1', color: 'white' }}
+                              >
+                                Previous Question
+                              </button>
+                            ) : <div style={{ width: "150px" }}></div>}
+                            {currentQuestion < quizQuestions.length - 1 && (
+                              <button
+                                className="btn"
+                                onClick={handleNextQuestion}
+                                style={{ height: '80px', borderRadius: '10px', backgroundColor: '#0D21A1', color: 'white' }}
+                              >
+                                Next Question
+                              </button>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -743,8 +769,8 @@ export default function Home() {
               <div className="d-flex flex-column" style={{ height: 'calc(100% - 40px)' }}>
                 <div style={{ height: 'calc(100% - 120px)', overflowY: 'auto' }} className="mb-3">
                   {chatHistory.map((msg, index) => (
-                    <div 
-                      key={msg.id} 
+                    <div
+                      key={msg.id}
                       id={`msg-${msg.id}`}
                       className={`p-2 mb-2 ${msg.role === 'user' ? 'bg-light' : 'bg-info bg-opacity-10'} ${highlightedMessageId === msg.id ? 'border border-primary border-2' : ''}`}
                       style={{
@@ -753,10 +779,10 @@ export default function Home() {
                       }}
                     >
                       <strong>{msg.role}:</strong>{' '}
-                      <div 
-                        dangerouslySetInnerHTML={{ 
-                          __html: parseAndSanitizeHTML(msg.content) 
-                        }} 
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: parseAndSanitizeHTML(msg.content)
+                        }}
                         style={{ display: 'inline' }}
                       />
                       {msg.role === 'assistant' && (
@@ -785,10 +811,10 @@ export default function Home() {
                   {isLoading && currentStream && (
                     <div className="p-2 mb-2 bg-info bg-opacity-10">
                       <strong>assistant:</strong>{' '}
-                      <div 
-                        dangerouslySetInnerHTML={{ 
-                          __html: parseAndSanitizeHTML(currentStream) 
-                        }} 
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: parseAndSanitizeHTML(currentStream)
+                        }}
                         style={{ display: 'inline' }}
                       />
                     </div>
@@ -799,9 +825,9 @@ export default function Home() {
                   {/* Pre-prompting buttons */}
                   <div className="d-flex flex-row gap-2 mb-3">
                     <button
-                      style={{ 
-                        backgroundColor: '#333333', 
-                        color: 'white', 
+                      style={{
+                        backgroundColor: '#333333',
+                        color: 'white',
                         borderRadius: '10px',
                         padding: '8px 12px',
                         height: '48px',
@@ -820,9 +846,9 @@ export default function Home() {
                       What is<br />force?
                     </button>
                     <button
-                      style={{ 
-                        backgroundColor: '#333333', 
-                        color: 'white', 
+                      style={{
+                        backgroundColor: '#333333',
+                        color: 'white',
                         borderRadius: '10px',
                         padding: '8px 12px',
                         height: '48px',
@@ -841,9 +867,9 @@ export default function Home() {
                       How do objects<br />move in space?
                     </button>
                     <button
-                      style={{ 
-                        backgroundColor: '#333333', 
-                        color: 'white', 
+                      style={{
+                        backgroundColor: '#333333',
+                        color: 'white',
                         borderRadius: '10px',
                         padding: '8px 12px',
                         height: '48px',
@@ -960,7 +986,7 @@ export default function Home() {
                     ) : (
                       <div className="d-flex align-items-center gap-2">
                         {section.id !== 'default' && (
-                          <div 
+                          <div
                             style={{ cursor: 'grab', color: '#666', padding: '4px' }}
                             onMouseDown={(e) => e.stopPropagation()} // Prevent text selection while dragging
                           >
@@ -1012,8 +1038,8 @@ export default function Home() {
                         <div className="card-body">
                           <div className="d-flex justify-content-between align-items-start">
                             <div className="d-flex gap-2 flex-grow-1">
-                              <div 
-                                className="d-flex align-items-center" 
+                              <div
+                                className="d-flex align-items-center"
                                 style={{ cursor: 'grab', color: '#666', padding: '4px' }}
                               >
                                 <FaGripVertical />
@@ -1050,7 +1076,7 @@ export default function Home() {
                                       onChange={(e) => setEditingNoteContent(e.target.value)}
                                       rows={5}
                                       placeholder="Use '•' or '*' at the start of a line for bullet points"
-                                      style={{ 
+                                      style={{
                                         fontFamily: 'monospace',
                                         whiteSpace: 'pre-wrap',
                                         backgroundColor: 'transparent',
@@ -1089,7 +1115,7 @@ export default function Home() {
                                         dangerouslySetInnerHTML={{
                                           __html: parseAndSanitizeHTML(note.answer || note.content)
                                         }}
-                                        style={{ 
+                                        style={{
                                           display: 'inline',
                                           lineHeight: '1.5',
                                           ...(note.id === 'default-note' ? {
@@ -1104,9 +1130,9 @@ export default function Home() {
                                     {note.contextRange && (
                                       <div className="d-flex justify-content-end mt-2">
                                         <button
-                                          style={{ 
-                                            backgroundColor: '#146FE1', 
-                                            borderColor: '#146FE1', 
+                                          style={{
+                                            backgroundColor: '#146FE1',
+                                            borderColor: '#146FE1',
                                             color: 'white',
                                             fontSize: '12px',
                                             padding: '4px 8px',
