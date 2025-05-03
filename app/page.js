@@ -713,7 +713,7 @@ export default function Home() {
                               disabled={selectedAnswer !== null}
                               style={{ height: '80px', borderRadius: '10px' }}
                             >
-                              <span className="rounded-circle bg-light text-dark fw-bold d-inline-flex justify-content-center align-items-center me-3" style={{ width: '32px', height: '32px' }}>
+                              <span className="rounded-circle fw-bold text-dark d-inline-flex justify-content-center align-items-center me-3" style={{ width: '38px', height: '38px', backgroundColor: '#69C8EC' }}>
 
                                 {option[0]}
                               </span>
