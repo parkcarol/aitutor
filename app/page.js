@@ -5,10 +5,12 @@ import Image from "next/image";
 import Dropdown from "react-bootstrap/Dropdown";
 import { BsThreeDotsVertical } from 'react-icons/bs';
 import { FaEdit, FaCheck, FaTimes, FaGripVertical, FaSyncAlt, FaArrowRight, FaArrowAltCircleUp, FaQuestionCircle, FaCog } from 'react-icons/fa';
-import { GiBrain } from 'react-icons/gi';
 import { HiLightBulb } from 'react-icons/hi';
 import QuizModal from './components/QuizModal';
 import { chatSessions } from "../lib/store";
+
+
+
 
 export default function Home() {
   const [message, setMessage] = useState("");
@@ -41,6 +43,12 @@ export default function Home() {
   const [quizQuestions, setQuizQuestions] = useState([]);
   const [isLoadingQuiz, setIsLoadingQuiz] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
+  const [userInputCount, setUserInputCount] = useState(0);
+  const toastRef = useRef(null);
+  const [isToastVisible, setIsToastVisible] = useState(false);
+
+
+
 
   // Initialize chat session
   useEffect(() => {
@@ -103,9 +111,14 @@ export default function Home() {
   const handleSubmit = async () => {
     if (!message.trim() || isLoading) return;
 
+    setUserInputCount(prev => prev + 1);
+
     try {
       setIsLoading(true);
       setCurrentStream("");
+
+
+
 
       // Add user message to history immediately
       const userMsg = { id: Date.now().toString(), role: "user", content: message };
@@ -471,70 +484,70 @@ export default function Home() {
   };
 
   // Add this to your existing CSS or create a new style tag in your HTML
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      .note-card {
-        cursor: grab;
-      }
-      .note-card.dragging {
-        opacity: 0.5;
-      }
-      .section-content {
-        min-height: 50px;
-        padding: 8px;
-        border-radius: 4px;
-      }
-      .section-content.drag-over {
-        background-color: rgba(0, 0, 0, 0.05);
-      }
-      .drag-handle {
-        cursor: grab;
-        padding: 4px;
-        color: #666;
-      }
-      .drag-handle:hover {
-        color: #333;
-      }
-      .section-content .card {
-        background-color: rgba(242, 230, 201, 0.6);
-      }
-      button.delete-btn {
-        transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
-      }
-      button.delete-btn:hover {
-        background-color:rgb(204, 50, 50) !important;
-        border-color: #9e3333 !important;
-      }
-      .note-content li {
-        margin-left: 20px;
-        list-style-type: disc;
-      }
-      .note-content br {
-        display: block;
-        margin: 8px 0;
-        content: "";
-      }
-      @keyframes loading-progress {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
-      }
-      @keyframes spinner-border {
-        to { transform: rotate(360deg); }
-      }
-      .quiz-spinner {
-        width: 2rem;
-        height: 2rem;
-        border: 0.2em solid #28a745;
-        border-right-color: transparent;
-        border-radius: 50%;
-        animation: spinner-border .75s linear infinite;
-        margin-top: 1.5rem;
-      }
-    `;
-    document.head.appendChild(style);
-    return () => document.head.removeChild(style);
-  }, []);
+  // useEffect(() => {
+  //   const style = document.createElement('style');
+  //   style.textContent = `
+  //     .note-card {
+  //       cursor: grab;
+  //     }
+  //     .note-card.dragging {
+  //       opacity: 0.5;
+  //     }
+  //     .section-content {
+  //       min-height: 50px;
+  //       padding: 8px;
+  //       border-radius: 4px;
+  //     }
+  //     .section-content.drag-over {
+  //       background-color: rgba(0, 0, 0, 0.05);
+  //     }
+  //     .drag-handle {
+  //       cursor: grab;
+  //       padding: 4px;
+  //       color: #666;
+  //     }
+  //     .drag-handle:hover {
+  //       color: #333;
+  //     }
+  //     .section-content .card {
+  //       background-color: rgba(242, 230, 201, 0.6);
+  //     }
+  //     button.delete-btn {
+  //       transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  //     }
+  //     button.delete-btn:hover {
+  //       background-color:rgb(204, 50, 50) !important;
+  //       border-color: #9e3333 !important;
+  //     }
+  //     .note-content li {
+  //       margin-left: 20px;
+  //       list-style-type: disc;
+  //     }
+  //     .note-content br {
+  //       display: block;
+  //       margin: 8px 0;
+  //       content: "";
+  //     }
+  //     @keyframes loading-progress {
+  //       0% { background-position: 200% 0; }
+  //       100% { background-position: -200% 0; }
+  //     }
+  //     @keyframes spinner-border {
+  //       to { transform: rotate(360deg); }
+  //     }
+  //     .quiz-spinner {
+  //       width: 2rem;
+  //       height: 2rem;
+  //       border: 0.2em solid #28a745;
+  //       border-right-color: transparent;
+  //       border-radius: 50%;
+  //       animation: spinner-border .75s linear infinite;
+  //       margin-top: 1.5rem;
+  //     }
+  //   `;
+  //   document.head.appendChild(style);
+  //   return () => document.head.removeChild(style);
+  // }, []);
 
   const toggleQuizMode = async () => {
     if (!isQuizMode) {
@@ -605,6 +618,26 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    const showToastIfNeeded = async () => {
+      if (userInputCount === 2 && toastRef.current) {
+        const { default: Toast } = await import('bootstrap/js/dist/toast');
+        const toast = new Toast(toastRef.current, { autohide: false });
+
+        toast.show();
+        setIsToastVisible(true);
+
+        toastRef.current.addEventListener('hidden.bs.toast', () => {
+          setIsToastVisible(false);
+        });
+      }
+    };
+
+    showToastIfNeeded();
+  }, [userInputCount]);
+
+
+
   return (
     <div>
 
@@ -636,7 +669,35 @@ export default function Home() {
         <div style={{ gridTemplateColumns: '1fr 1fr' }} className="d-flex flex-row gap-3">
 
           {/* Left Section */}
-          <div style={{ height: 'calc(100vh - 80px)', backgroundColor: '#DADADA', borderRadius: '10px' }} className="d-flex flex-column w-50 mt-2 p-2 border shadow">
+          <div style={{
+            height: 'calc(100vh - 80px)', backgroundColor: '#DADADA', borderRadius: '10px', position: 'relatove'
+          }} className="d-flex flex-column w-50 mt-2 p-2 border shadow">
+            <div
+
+              className="position-absolute top-0 p-3"
+              style={{ left: '310px' }}
+            >
+              <div
+                ref={toastRef}
+                className="toast align-items-center"
+                role="alert"
+                aria-live="assertive"
+                aria-atomic="true"
+              >
+                <div className="d-flex">
+                  <div className="toast-body">
+                    Let's test your knowledge! Click the lightbulb icon to start the quiz.
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-close me-2 m-auto"
+                    data-bs-dismiss="toast"
+                    aria-label="Close"
+                  ></button>
+                </div>
+              </div>
+            </div>
+
             <div className="d-flex justify-content-between align-items-center pb-2 border-bottom">
               <h4 className="m-0">{isQuizMode ? "Quiz" : "Chat"}</h4>
               <button
@@ -671,8 +732,10 @@ export default function Home() {
                   }
                 }}
               >
-                <HiLightBulb />
+                <HiLightBulb className={isToastVisible ? "shake-effect" : ""} />
+
               </button>
+
             </div>
 
             {isQuizMode ? (
@@ -1162,6 +1225,9 @@ export default function Home() {
 
         </div>
       </div>
+
+
+
 
       <QuizModal
         show={showQuiz}
