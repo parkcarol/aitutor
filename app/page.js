@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Dropdown from "react-bootstrap/Dropdown";
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { FaEdit, FaCheck, FaTimes, FaGripVertical, FaSyncAlt, FaArrowRight, FaArrowAltCircleUp, FaQuestionCircle, FaCog } from 'react-icons/fa';
+import { FaEdit, FaPen, FaCheck, FaTimes, FaGripVertical, FaSyncAlt, FaArrowRight, FaArrowAltCircleUp, FaQuestionCircle, FaCog } from 'react-icons/fa';
 import { HiLightBulb } from 'react-icons/hi';
 import QuizModal from './components/QuizModal';
 import { chatSessions } from "../lib/store";
@@ -1027,12 +1027,14 @@ export default function Home() {
                     autoFocus
                   />
                   <button
+                    style={{ fontSize: '12px', borderRadius: '6px' }}
                     className="btn btn-sm btn-success"
                     onClick={addSection}
                   >
                     <FaCheck />
                   </button>
                   <button
+                    style={{ fontSize: '12px', borderRadius: '6px' }}
                     className="btn btn-sm btn-danger"
                     onClick={() => {
                       setIsAddingSectionMode(false);
@@ -1199,21 +1201,21 @@ export default function Home() {
                                     </div>
                                   ) : (
                                     <div>
-                                      <div className="d-flex justify-content-end align-items-start mb-2">
+                                      <div className="d-flex justify-content-end align-items-start mb-2 gap-2">
                                         <div>
                                           <button
-                                            style={{ backgroundColor: '#0D21A1', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px' }}
-                                            className="btn btn-sm m-1"
+                                            style={{ backgroundColor: '#0D21A1', color: 'white', fontSize: '12px', borderRadius: '6px' }}
+                                            className="btn btn-sm"
                                             onClick={() => editNote(note.id)}
                                             title="Edit note"
                                           >
-                                            <FaEdit />
+                                            <FaPen />
                                           </button>
                                         </div>
                                         <div>
                                           <button
-                                            style={{ backgroundColor: '#0D21A1', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px' }}
-                                            className="btn btn-sm m-1 delete-btn"
+                                            style={{ backgroundColor: '#0D21A1', color: 'white', fontSize: '12px', borderRadius: '6px' }}
+                                            className="btn btn-sm delete-btn"
                                             onClick={() => deleteNote(note.id)}
                                             title="Delete note"
                                           >
