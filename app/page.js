@@ -46,6 +46,7 @@ export default function Home() {
   const [userInputCount, setUserInputCount] = useState(0);
   const toastRef = useRef(null);
   const [isToastVisible, setIsToastVisible] = useState(false);
+  const inputRef = useRef(null);
 
 
 
@@ -113,6 +114,7 @@ export default function Home() {
 
     setUserInputCount(prev => prev + 1);
 
+
     try {
       setIsLoading(true);
       setCurrentStream("");
@@ -172,6 +174,9 @@ export default function Home() {
     } finally {
       setIsLoading(false);
       setMessage("");
+      setTimeout(() => {
+        if (inputRef.current) inputRef.current.focus();
+      }, 0);
     }
   };
 
@@ -484,70 +489,70 @@ export default function Home() {
   };
 
   // Add this to your existing CSS or create a new style tag in your HTML
-  // useEffect(() => {
-  //   const style = document.createElement('style');
-  //   style.textContent = `
-  //     .note-card {
-  //       cursor: grab;
-  //     }
-  //     .note-card.dragging {
-  //       opacity: 0.5;
-  //     }
-  //     .section-content {
-  //       min-height: 50px;
-  //       padding: 8px;
-  //       border-radius: 4px;
-  //     }
-  //     .section-content.drag-over {
-  //       background-color: rgba(0, 0, 0, 0.05);
-  //     }
-  //     .drag-handle {
-  //       cursor: grab;
-  //       padding: 4px;
-  //       color: #666;
-  //     }
-  //     .drag-handle:hover {
-  //       color: #333;
-  //     }
-  //     .section-content .card {
-  //       background-color: rgba(242, 230, 201, 0.6);
-  //     }
-  //     button.delete-btn {
-  //       transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
-  //     }
-  //     button.delete-btn:hover {
-  //       background-color:rgb(204, 50, 50) !important;
-  //       border-color: #9e3333 !important;
-  //     }
-  //     .note-content li {
-  //       margin-left: 20px;
-  //       list-style-type: disc;
-  //     }
-  //     .note-content br {
-  //       display: block;
-  //       margin: 8px 0;
-  //       content: "";
-  //     }
-  //     @keyframes loading-progress {
-  //       0% { background-position: 200% 0; }
-  //       100% { background-position: -200% 0; }
-  //     }
-  //     @keyframes spinner-border {
-  //       to { transform: rotate(360deg); }
-  //     }
-  //     .quiz-spinner {
-  //       width: 2rem;
-  //       height: 2rem;
-  //       border: 0.2em solid #28a745;
-  //       border-right-color: transparent;
-  //       border-radius: 50%;
-  //       animation: spinner-border .75s linear infinite;
-  //       margin-top: 1.5rem;
-  //     }
-  //   `;
-  //   document.head.appendChild(style);
-  //   return () => document.head.removeChild(style);
-  // }, []);
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .note-card {
+        cursor: grab;
+      }
+      .note-card.dragging {
+        opacity: 0.5;
+      }
+      .section-content {
+        min-height: 50px;
+        padding: 8px;
+        border-radius: 4px;
+      }
+      .section-content.drag-over {
+        background-color: rgba(0, 0, 0, 0.05);
+      }
+      .drag-handle {
+        cursor: grab;
+        padding: 4px;
+        color: #666;
+      }
+      .drag-handle:hover {
+        color: #333;
+      }
+      .section-content .card {
+        background-color: rgba(242, 230, 201, 0.6);
+      }
+      button.delete-btn {
+        transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+      }
+      button.delete-btn:hover {
+        background-color:rgb(204, 50, 50) !important;
+        border-color: #9e3333 !important;
+      }
+      .note-content li {
+        margin-left: 20px;
+        list-style-type: disc;
+      }
+      .note-content br {
+        display: block;
+        margin: 8px 0;
+        content: "";
+      }
+      @keyframes loading-progress {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+      @keyframes spinner-border {
+        to { transform: rotate(360deg); }
+      }
+      .quiz-spinner {
+        width: 2rem;
+        height: 2rem;
+        border: 0.2em solid #28a745;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spinner-border .75s linear infinite;
+        margin-top: 1.5rem;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
 
   const toggleQuizMode = async () => {
     if (!isQuizMode) {
@@ -620,7 +625,7 @@ export default function Home() {
 
   useEffect(() => {
     const showToastIfNeeded = async () => {
-      if (userInputCount === 2 && toastRef.current) {
+      if (userInputCount === 5 && toastRef.current) {
         const { default: Toast } = await import('bootstrap/js/dist/toast');
         const toast = new Toast(toastRef.current, { autohide: false });
 
@@ -686,7 +691,7 @@ export default function Home() {
               >
                 <div className="d-flex">
                   <div className="toast-body">
-                    Let's test your knowledge! Click the lightbulb icon to start the quiz.
+                    Let&apos;s test your knowledge! Click the lightbulb icon to start the quiz.
                   </div>
                   <button
                     type="button"
@@ -755,7 +760,7 @@ export default function Home() {
                     </div>
                   </div>
                 ) : quizQuestions.length > 0 ? (
-                  <div className="p-4">
+                  <div className="">
                     <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
                       <div className="flex-column align-items-center card text-center mb-3 border-0" style={{ minHeight: '200px', backgroundColor: '#EEF0F2' }}>
                         <div className="d-flex flex-column align-items-center justify-content-center card-body" style={{ maxWidth: '300px' }}>
@@ -768,20 +773,29 @@ export default function Home() {
                           <div key={index} className="w-50 p-1">
                             <button
                               key={index}
-                              className={`btn ${selectedAnswer === option[0]
-                                ? 'btn-secondary'
-                                : 'btn-light'
-                                } text-start w-100`}
+                              className={`btn ${selectedAnswer === option[0] ? 'btn-secondary' : 'btn-light'} w-100`}
                               onClick={() => handleAnswerSelect(option[0])}
                               disabled={selectedAnswer !== null}
-                              style={{ height: '80px', borderRadius: '10px' }}
+                              style={{ height: '100%', borderRadius: '10px' }}
                             >
-                              <span className="rounded-circle fw-bold text-dark d-inline-flex justify-content-center align-items-center me-3" style={{ width: '38px', height: '38px', backgroundColor: '#69C8EC' }}>
+                              <div className="d-flex w-100 align-items-center">
+                                <span
+                                  className="rounded-circle fw-bold text-dark d-inline-flex justify-content-center align-items-center flex-shrink-0"
+                                  style={{
+                                    width: '38px',
+                                    height: '38px',
+                                    backgroundColor: '#69C8EC',
+                                    lineHeight: 'normal',
+                                    marginRight: '10px'
+                                  }}
+                                >
+                                  {option[0]}
+                                </span>
 
-                                {option[0]}
-                              </span>
-                              <span>{option.slice(3)}</span>
+                                <span className="text-start">{option.slice(3)}</span>
+                              </div>
                             </button>
+
                           </div>
                         ))}
                       </div>
@@ -852,7 +866,7 @@ export default function Home() {
                         <div className="mt-2">
                           <button
                             style={{ backgroundColor: '#EEC643', borderRadius: '10px' }}
-                            className="btn btn-sm text-white"
+                            className="btn btn-sm"
                             onClick={() => {
                               const contextMessages = chatHistory.slice(Math.max(0, index - 1), index + 1)
                                 .map(msg => ({
@@ -889,7 +903,7 @@ export default function Home() {
                   <div className="d-flex flex-row gap-2 mb-3">
                     <button
                       style={{
-                        backgroundColor: '#333333',
+                        backgroundColor: 'darkgrey',
                         color: 'white',
                         borderRadius: '10px',
                         padding: '8px 12px',
@@ -910,7 +924,7 @@ export default function Home() {
                     </button>
                     <button
                       style={{
-                        backgroundColor: '#333333',
+                        backgroundColor: 'darkgrey',
                         color: 'white',
                         borderRadius: '10px',
                         padding: '8px 12px',
@@ -931,7 +945,7 @@ export default function Home() {
                     </button>
                     <button
                       style={{
-                        backgroundColor: '#333333',
+                        backgroundColor: 'darkgrey',
                         color: 'white',
                         borderRadius: '10px',
                         padding: '8px 12px',
@@ -955,13 +969,14 @@ export default function Home() {
                   {/* Chat input */}
                   <div style={{ borderRadius: '10px' }} className="input-group mb-3 p-1 bg-white">
                     <input
+                      ref={inputRef}
                       type="text"
                       style={{ border: '0px', borderRadius: '10px' }}
                       className="form-control p-2"
                       placeholder="Chat with me here"
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      onKeyUp={(e) => e.key === 'Enter' && handleSubmit()}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                       disabled={isLoading}
                     />
                     <button
@@ -991,7 +1006,7 @@ export default function Home() {
                     placeholder="Section name"
                     value={newSectionTitle}
                     onChange={(e) => setNewSectionTitle(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && addSection()}
+                    onKeyDown={(e) => e.key === 'Enter' && addSection()}
                     autoFocus
                   />
                   <button
@@ -1043,7 +1058,7 @@ export default function Home() {
                         className="form-control form-control-sm"
                         defaultValue={section.title}
                         onBlur={(e) => updateSectionTitle(section.id, e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && updateSectionTitle(section.id, e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && updateSectionTitle(section.id, e.target.value)}
                         autoFocus
                       />
                     ) : (
@@ -1110,19 +1125,19 @@ export default function Home() {
                               <div className="flex-grow-1">
                                 {editingNoteId === note.id ? (
                                   <div>
-                                    <div className="d-flex justify-content-between align-items-start mb-2">
+                                    <div className="d-flex justify-content-end align-items-start mb-2">
                                       <div className="d-flex gap-2">
                                         <button
-                                          style={{ backgroundColor: '#146FE1', borderColor: '#146FE1', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', fontWeight: 'bold' }}
-                                          className="btn btn-sm"
+                                          style={{ backgroundColor: '#0D21A1', borderColor: '#146FE1', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', fontWeight: 'bold' }}
+                                          className="btn btn-sm m-1"
                                           onClick={() => saveNoteEdit(note.id)}
                                           title="Save note"
                                         >
                                           <FaCheck />
                                         </button>
                                         <button
-                                          style={{ backgroundColor: '#333333', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                          className="btn btn-sm"
+                                          style={{ backgroundColor: '#0D21A1', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                          className="btn btn-sm m-1"
                                           onClick={() => {
                                             setEditingNoteId(null);
                                             setEditingNoteContent('');
@@ -1150,11 +1165,11 @@ export default function Home() {
                                   </div>
                                 ) : (
                                   <div>
-                                    <div className="d-flex justify-content-between align-items-start mb-2">
+                                    <div className="d-flex justify-content-end align-items-start mb-2">
                                       <div>
                                         <button
-                                          style={{ backgroundColor: '#333333', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                          className="btn btn-sm"
+                                          style={{ backgroundColor: '#0D21A1', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                          className="btn btn-sm m-1"
                                           onClick={() => editNote(note.id)}
                                           title="Edit note"
                                         >
@@ -1163,8 +1178,8 @@ export default function Home() {
                                       </div>
                                       <div>
                                         <button
-                                          style={{ backgroundColor: '#333333', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                          className="btn btn-sm delete-btn"
+                                          style={{ backgroundColor: '#0D21A1', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                          className="btn btn-sm m-1 delete-btn"
                                           onClick={() => deleteNote(note.id)}
                                           title="Delete note"
                                         >
@@ -1172,6 +1187,7 @@ export default function Home() {
                                         </button>
                                       </div>
                                     </div>
+
                                     <div className="mb-0 note-content">
                                       {note.answer && <strong>A: </strong>}
                                       <div
