@@ -669,11 +669,11 @@ export default function Home() {
               <Dropdown.Toggle variant="" id="dropdown-basic" className="opacity-50">
                 <Image src="/user.png" alt="mdo" width="32" height="32" className="rounded-circle" />
               </Dropdown.Toggle>
-              <Dropdown.Menu>
+              {/* <Dropdown.Menu>
                 <Dropdown.Item href="#/action-1">Profile</Dropdown.Item>
                 <Dropdown.Item href="#/action-2">Settings</Dropdown.Item>
                 <Dropdown.Item href="#/action-3">Sign out</Dropdown.Item>
-              </Dropdown.Menu>
+              </Dropdown.Menu> */}
             </Dropdown>
           </div>
         </div>
@@ -1202,7 +1202,7 @@ export default function Home() {
                                       <div className="d-flex justify-content-end align-items-start mb-2">
                                         <div>
                                           <button
-                                            style={{ backgroundColor: '#0D21A1', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            style={{ backgroundColor: '#0D21A1', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px' }}
                                             className="btn btn-sm m-1"
                                             onClick={() => editNote(note.id)}
                                             title="Edit note"
@@ -1212,7 +1212,7 @@ export default function Home() {
                                         </div>
                                         <div>
                                           <button
-                                            style={{ backgroundColor: '#0D21A1', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            style={{ backgroundColor: '#0D21A1', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px' }}
                                             className="btn btn-sm m-1 delete-btn"
                                             onClick={() => deleteNote(note.id)}
                                             title="Delete note"
