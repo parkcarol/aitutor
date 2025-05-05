@@ -559,6 +559,12 @@ export default function Home() {
   }, []);
 
   const toggleQuizMode = async () => {
+    if (toastRef.current) {
+      const { default: Toast } = await import('bootstrap/js/dist/toast');
+      const toastInstance = Toast.getInstance(toastRef.current) || new Toast(toastRef.current);
+      toastInstance.hide();
+      setIsToastVisible(false);
+    }
     if (!isQuizMode) {
       // Switch to quiz mode immediately
       setIsQuizMode(true);
@@ -721,7 +727,8 @@ export default function Home() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  transition: 'all 0.2s ease-in-out'
+                  transition: 'all 0.2s ease-in-out',
+                  borderRadius: '12px'
                 }}
                 className="btn btn-sm"
                 title={isQuizMode ? "Return to Chat" : "Quiz Mode"}
@@ -869,7 +876,12 @@ export default function Home() {
                       {msg.role === 'assistant' && (
                         <div className="mt-2">
                           <button
-                            style={{ backgroundColor: '#EEC643', borderRadius: '10px' }}
+                            style={{
+                              backgroundColor: '#EEC643',
+                              fontSize: '12px',
+                              padding: '4px 8px',
+                              borderRadius: '6px'
+                            }}
                             className="btn btn-sm"
                             onClick={() => {
                               const contextMessages = chatHistory.slice(Math.max(0, index - 1), index + 1)
@@ -1032,6 +1044,11 @@ export default function Home() {
                 </div>
               ) : (
                 <button
+                  style={{
+                    fontSize: '12px',
+                    padding: '4px 8px',
+                    borderRadius: '6px'
+                  }}
                   className="btn btn-sm btn-outline-primary"
                   onClick={() => setIsAddingSectionMode(true)}
                 >
