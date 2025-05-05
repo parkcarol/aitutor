@@ -217,7 +217,8 @@ export default function Home() {
 
       // Add the summarized note to the notes state
       if (data.note) {
-        setNotes(prev => [...prev, data.note]);
+        // setNotes(prev => [...prev, data.note]);
+        addNote(data.note);
       }
     } catch (error) {
       console.error("Error saving note:", error);
@@ -258,7 +259,10 @@ export default function Home() {
       sectionId,
       timestamp: Date.now()
     };
-    setNotes(prev => [...prev, newNote]);
+    setNotes(prev => {
+      const filtered = prev.filter(n => n.id !== 'default-note');
+      return [...filtered, newNote];
+    });
   };
 
   const deleteNote = (noteId) => {
@@ -997,7 +1001,8 @@ export default function Home() {
           {/* Right Section */}
           <div style={{ height: 'calc(100vh - 80px)', backgroundColor: '#F2E6C9', borderRadius: '10px' }} className="d-flex flex-column w-50 mt-2 p-2 border rounded shadow">
             <div className="d-flex justify-content-between align-items-center pb-2 border-bottom">
-              <h4 className="m-0">Motion Notes</h4>
+              <h4 className="mb-0">Motion Notes</h4>
+
               {isAddingSectionMode ? (
                 <div className="d-flex gap-2 align-items-center">
                   <input
@@ -1039,7 +1044,7 @@ export default function Home() {
               {sections.map(section => (
                 <div
                   key={section.id}
-                  className={`mb-4 section-drop-indicator ${section.id === 'default' ? '' : 'draggable-section'}`}
+                  className={`mb-4 mt-2 section-drop-indicator ${section.id === 'default' ? '' : 'draggable-section'}`}
                   draggable={section.id !== 'default'}
                   onDragStart={(e) => handleSectionDragStart(e, section.id)}
                   onDragEnd={handleSectionDragEnd}
@@ -1105,134 +1110,147 @@ export default function Home() {
                     }}
                     onDrop={(e) => handleDrop(e, section.id)}
                   >
-                    {(notesBySection[section.id] || []).map(note => (
-                      <div
-                        key={note.id}
-                        className="card mb-2"
-                        draggable="true"
-                        onDragStart={(e) => handleDragStart(e, note, section.id)}
-                        onDragEnd={handleDragEnd}
-                      >
-                        <div className="card-body">
-                          <div className="d-flex justify-content-between align-items-start">
-                            <div className="d-flex gap-2 flex-grow-1">
-                              <div
-                                className="d-flex align-items-center"
-                                style={{ cursor: 'grab', color: '#666', padding: '4px' }}
-                              >
-                                <FaGripVertical />
-                              </div>
-                              <div className="flex-grow-1">
-                                {editingNoteId === note.id ? (
-                                  <div>
-                                    <div className="d-flex justify-content-end align-items-start mb-2">
-                                      <div className="d-flex gap-2">
-                                        <button
-                                          style={{ backgroundColor: '#0D21A1', borderColor: '#146FE1', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', fontWeight: 'bold' }}
-                                          className="btn btn-sm m-1"
-                                          onClick={() => saveNoteEdit(note.id)}
-                                          title="Save note"
-                                        >
-                                          <FaCheck />
-                                        </button>
-                                        <button
-                                          style={{ backgroundColor: '#0D21A1', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                          className="btn btn-sm m-1"
-                                          onClick={() => {
-                                            setEditingNoteId(null);
-                                            setEditingNoteContent('');
-                                          }}
-                                          title="Cancel"
-                                        >
-                                          <FaTimes />
-                                        </button>
-                                      </div>
-                                    </div>
-                                    <textarea
-                                      className="form-control border-0"
-                                      value={editingNoteContent}
-                                      onChange={(e) => setEditingNoteContent(e.target.value)}
-                                      rows={5}
-                                      placeholder="Use '•' or '*' at the start of a line for bullet points"
-                                      style={{
-                                        fontFamily: 'monospace',
-                                        whiteSpace: 'pre-wrap',
-                                        backgroundColor: 'transparent',
-                                        resize: 'none'
-                                      }}
-                                      autoFocus
-                                    />
-                                  </div>
-                                ) : (
-                                  <div>
-                                    <div className="d-flex justify-content-end align-items-start mb-2">
-                                      <div>
-                                        <button
-                                          style={{ backgroundColor: '#0D21A1', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                          className="btn btn-sm m-1"
-                                          onClick={() => editNote(note.id)}
-                                          title="Edit note"
-                                        >
-                                          <FaEdit />
-                                        </button>
-                                      </div>
-                                      <div>
-                                        <button
-                                          style={{ backgroundColor: '#0D21A1', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                          className="btn btn-sm m-1 delete-btn"
-                                          onClick={() => deleteNote(note.id)}
-                                          title="Delete note"
-                                        >
-                                          <FaTimes />
-                                        </button>
-                                      </div>
-                                    </div>
+                    {(() => {
+                      const sectionNotes = notesBySection[section.id] || [];
+                      const isOnlyDefaultNote = sectionNotes.length === 1 && sectionNotes[0].id === 'default-note';
 
-                                    <div className="mb-0 note-content">
-                                      {note.answer && <strong>A: </strong>}
-                                      <div
-                                        dangerouslySetInnerHTML={{
-                                          __html: parseAndSanitizeHTML(note.answer || note.content)
-                                        }}
+                      if (isOnlyDefaultNote) {
+                        return (
+                          <div className="text-muted fst-italic text-center">
+                            {sectionNotes[0].content}
+                          </div>
+                        );
+                      }
+
+                      return sectionNotes.map(note => (
+                        <div
+                          key={note.id}
+                          className="card mb-2"
+                          draggable="true"
+                          onDragStart={(e) => handleDragStart(e, note, section.id)}
+                          onDragEnd={handleDragEnd}
+                        >
+                          <div className="card-body">
+                            <div className="d-flex justify-content-between align-items-start">
+                              <div className="d-flex gap-2 flex-grow-1">
+                                <div
+                                  className="d-flex align-items-center"
+                                  style={{ cursor: 'grab', color: '#666', padding: '4px' }}
+                                >
+                                  <FaGripVertical />
+                                </div>
+                                <div className="flex-grow-1">
+                                  {editingNoteId === note.id ? (
+                                    <div>
+                                      <div className="d-flex justify-content-end align-items-start mb-2">
+                                        <div className="d-flex gap-2">
+                                          <button
+                                            style={{ backgroundColor: '#0D21A1', borderColor: '#146FE1', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', fontWeight: 'bold' }}
+                                            className="btn btn-sm m-1"
+                                            onClick={() => saveNoteEdit(note.id)}
+                                            title="Save note"
+                                          >
+                                            <FaCheck />
+                                          </button>
+                                          <button
+                                            style={{ backgroundColor: '#0D21A1', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            className="btn btn-sm m-1"
+                                            onClick={() => {
+                                              setEditingNoteId(null);
+                                              setEditingNoteContent('');
+                                            }}
+                                            title="Cancel"
+                                          >
+                                            <FaTimes />
+                                          </button>
+                                        </div>
+                                      </div>
+                                      <textarea
+                                        className="form-control border-0"
+                                        value={editingNoteContent}
+                                        onChange={(e) => setEditingNoteContent(e.target.value)}
+                                        rows={5}
+                                        placeholder="Use '•' or '*' at the start of a line for bullet points"
                                         style={{
-                                          display: 'inline',
-                                          lineHeight: '1.5',
-                                          ...(note.id === 'default-note' ? {
-                                            color: '#666',
-                                            fontStyle: 'italic',
-                                            textAlign: 'center',
-                                            padding: '20px 0'
-                                          } : {})
+                                          fontFamily: 'monospace',
+                                          whiteSpace: 'pre-wrap',
+                                          backgroundColor: 'transparent',
+                                          resize: 'none'
                                         }}
+                                        autoFocus
                                       />
                                     </div>
-                                    {note.contextRange && (
-                                      <div className="d-flex justify-content-end mt-2">
-                                        <button
-                                          style={{
-                                            backgroundColor: '#146FE1',
-                                            borderColor: '#146FE1',
-                                            color: 'white',
-                                            fontSize: '12px',
-                                            padding: '4px 8px',
-                                            borderRadius: '6px'
-                                          }}
-                                          className="btn btn-sm"
-                                          onClick={() => jumpToChatContext(note.contextRange)}
-                                          title="Jump to chat"
-                                        >
-                                          Jump to chat
-                                        </button>
+                                  ) : (
+                                    <div>
+                                      <div className="d-flex justify-content-end align-items-start mb-2">
+                                        <div>
+                                          <button
+                                            style={{ backgroundColor: '#0D21A1', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            className="btn btn-sm m-1"
+                                            onClick={() => editNote(note.id)}
+                                            title="Edit note"
+                                          >
+                                            <FaEdit />
+                                          </button>
+                                        </div>
+                                        <div>
+                                          <button
+                                            style={{ backgroundColor: '#0D21A1', borderColor: '#333333', color: 'white', width: '24px', height: '24px', padding: '0px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            className="btn btn-sm m-1 delete-btn"
+                                            onClick={() => deleteNote(note.id)}
+                                            title="Delete note"
+                                          >
+                                            <FaTimes />
+                                          </button>
+                                        </div>
                                       </div>
-                                    )}
-                                  </div>
-                                )}
+
+                                      <div className="mb-0 note-content">
+                                        {note.answer && <strong></strong>}
+                                        <div
+                                          dangerouslySetInnerHTML={{
+                                            __html: parseAndSanitizeHTML(note.answer || note.content)
+                                          }}
+                                          style={{
+                                            display: 'inline',
+                                            lineHeight: '1.5',
+                                            ...(note.id === 'default-note' ? {
+                                              color: '#666',
+                                              fontStyle: 'italic',
+                                              textAlign: 'center',
+                                              padding: '20px 0'
+                                            } : {})
+                                          }}
+                                        />
+                                      </div>
+                                      {note.contextRange && (
+                                        <div className="d-flex justify-content-end mt-2">
+                                          <button
+                                            style={{
+                                              backgroundColor: '#146FE1',
+                                              borderColor: '#146FE1',
+                                              color: 'white',
+                                              fontSize: '12px',
+                                              padding: '4px 8px',
+                                              borderRadius: '6px'
+                                            }}
+                                            className="btn btn-sm"
+                                            onClick={() => jumpToChatContext(note.contextRange)}
+                                            title="Jump to chat"
+                                          >
+                                            Jump to chat
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
                 </div>
               ))}
