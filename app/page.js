@@ -658,29 +658,18 @@ export default function Home() {
 
       {/* Navbar */}
       <nav className="navbar navbar-expand-lg bg-body-tertiary">
-        <div className="container-fluid">
-          <a className="navbar-brand" href="#">AITutor</a>
+        <div className="container-fluid text-center">
+          <a className="navbar-brand" href="#">aiTutor</a>
           <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
             <span className="navbar-toggler-icon"></span>
           </button>
 
-          <div className="d-flex align-items-center gap-2">
-            <Dropdown>
-              <Dropdown.Toggle variant="" id="dropdown-basic" className="opacity-50">
-                <Image src="/user.png" alt="mdo" width="32" height="32" className="rounded-circle" />
-              </Dropdown.Toggle>
-              {/* <Dropdown.Menu>
-                <Dropdown.Item href="#/action-1">Profile</Dropdown.Item>
-                <Dropdown.Item href="#/action-2">Settings</Dropdown.Item>
-                <Dropdown.Item href="#/action-3">Sign out</Dropdown.Item>
-              </Dropdown.Menu> */}
-            </Dropdown>
-          </div>
-        </div>
-      </nav>
+
+        </div >
+      </nav >
 
       {/* Main Content */}
-      <div className="container-fluid">
+      <div div className="container-fluid" >
         <div style={{ gridTemplateColumns: '1fr 1fr' }} className="d-flex flex-row gap-3">
 
           {/* Left Section */}
@@ -866,7 +855,10 @@ export default function Home() {
                         borderRadius: '8px'
                       }}
                     >
-                      <strong>{msg.role}:</strong>{' '}
+                      {/* <strong>{msg.role}:</strong>{' '} */}
+                      <strong>
+                        {msg.role === 'user' ? 'You' : msg.role === 'assistant' ? 'aiTutor' : msg.role}:
+                      </strong>{' '}
                       <div
                         dangerouslySetInnerHTML={{
                           __html: parseAndSanitizeHTML(msg.content)
@@ -903,7 +895,7 @@ export default function Home() {
                   <div ref={chatEndRef} />
                   {isLoading && currentStream && (
                     <div className="p-2 mb-2 bg-info bg-opacity-10">
-                      <strong>assistant:</strong>{' '}
+                      <strong>aiTutor:</strong>{' '}
                       <div
                         dangerouslySetInnerHTML={{
                           __html: parseAndSanitizeHTML(currentStream)
@@ -1013,7 +1005,7 @@ export default function Home() {
           {/* Right Section */}
           <div style={{ height: 'calc(100vh - 80px)', backgroundColor: '#F2E6C9', borderRadius: '10px' }} className="d-flex flex-column w-50 mt-2 p-2 border rounded shadow">
             <div className="d-flex justify-content-between align-items-center pb-2 border-bottom">
-              <h4 className="mb-0">Motion Notes</h4>
+              <h4 className="mb-0">Notes</h4>
 
               {isAddingSectionMode ? (
                 <div className="d-flex gap-2 align-items-center">
@@ -1246,7 +1238,7 @@ export default function Home() {
                                         <div className="d-flex justify-content-end mt-2">
                                           <button
                                             style={{
-                                              backgroundColor: '#146FE1',
+                                              backgroundColor: '#0D21A1',
                                               borderColor: '#146FE1',
                                               color: 'white',
                                               fontSize: '12px',
@@ -1277,7 +1269,7 @@ export default function Home() {
           </div>
 
         </div>
-      </div>
+      </div >
 
 
 
