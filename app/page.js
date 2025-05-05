@@ -668,7 +668,7 @@ export default function Home() {
       </nav >
 
       {/* Main Content */}
-      <div div className="container-fluid" >
+      <div className="container-fluid" >
         <div style={{ gridTemplateColumns: '1fr 1fr' }} className="d-flex flex-row gap-3">
 
           {/* Left Section */}
@@ -1279,6 +1279,7 @@ export default function Home() {
         messages={chatHistory}
         context={chatSessions[chatId]?.context}
       />
-    </div >
+
+    </div>
   );
 }
